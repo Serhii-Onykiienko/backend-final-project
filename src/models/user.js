@@ -2,4 +2,4 @@ import { Schema, model } from "mongoose";
 
 const userSchema = new Schema({});
 
-export const User = model("user", userSchema);
+export const User = model("User", userSchema);
