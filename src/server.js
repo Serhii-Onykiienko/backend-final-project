@@ -1,6 +1,7 @@
 // src/server.js
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import "dotenv/config";
 
 import { errors } from "celebrate";
@@ -11,11 +12,18 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import { connectMongoDB } from "./db/connectToMongoDB.js";
 import cookieParser from "cookie-parser";
 
-import authRouters from "./routes/authRouters.js";
+import authRouter from "./routes/authRouters.js";
+import categoriesRouter from "./routes/categoriesRouters.js";
+import feedbacksRouter from "./routes/feedbacksRouters.js";
+import goodsRouter from "./routes/goodsRouters.js";
+import ordersRouter from "./routes/ordersRouters.js";
+import subscriptionsRouter from "./routes/subscriptionsRouters.js";
+import usersRouter from "./routes/usersRouters.js";
 
 const app = express();
-const PORT = process.env.PORT ?? 3000;
+const PORT = process.env.PORT ?? 4000;
 
+app.use(helmet());
 app.use(logger);
 app.use(express.json());
 app.use(
@@ -28,7 +36,13 @@ app.use(cookieParser());
 
 //? ================Routers================
 
-app.use(authRouters);
+app.use(authRouter);
+app.use(categoriesRouter);
+app.use(feedbacksRouter);
+app.use(goodsRouter);
+app.use(ordersRouter);
+app.use(subscriptionsRouter);
+app.use(usersRouter);
 
 //? ================Middlewares================
 

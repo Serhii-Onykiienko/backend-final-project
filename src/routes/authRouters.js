@@ -22,6 +22,6 @@ authRouter.post("/api/auth/refresh", ctrl.refreshUserSession);
 
 authRouter.post("/api/auth/request-reset-email", ctrl.requestResetEmail);
 
-authRouter.post("/api/auth/loreset-passwordgout", ctrl.resetPassword);
+authRouter.post("/api/auth/reset-password", ctrl.resetPassword);
 
 export default authRouter;

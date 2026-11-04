@@ -1,3 +1,3 @@
 //? Отримати замовлення
 
-export const getOrder = async (req, res) => {};
+export const getOrders = async (req, res) => {};
