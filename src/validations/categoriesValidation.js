@@ -1,3 +1,3 @@
-import { Segments } from "celebrate";
+import { Joi, Segments } from "celebrate";
 
 export const getCategoriesSchema = {};
