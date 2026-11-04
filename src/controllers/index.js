@@ -1,8 +1,8 @@
-import { registerUser } from "../controllers/auth/register.js";
-import { loginUser } from "../controllers/auth/login.js";
-import { logoutUser } from "../controllers/auth/logout.js";
-import { refreshUserSession } from "../controllers/auth/refreshUserSession.js";
-import { requestResetEmail } from "../controllers/auth/requestResetEmail.js";
+import { registerUser } from "./auth/registerUser.js";
+import { loginUser } from "./auth/loginUser.js";
+import { logoutUser } from "./auth/logoutUser.js";
+import { refreshUserSession } from "./auth/refreshUserSession.js";
+import { requestResetEmail } from "./auth/requestResetEmail.js";
 import { resetPassword } from "./auth/resetPassword.js";
 
 export const auth = {
