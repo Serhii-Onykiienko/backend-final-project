@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { GENDER, SIZE } from "../constants/tags";
+import { GENDER, SIZE } from "../constants/tags.js";
 
 const goodSchema = new Schema(
   {
@@ -12,6 +12,7 @@ const goodSchema = new Schema(
     category: {
       type: Schema.Types.ObjectId,
       required: true,
+      ref: "Category",
     },
 
     image: String,
@@ -22,17 +23,19 @@ const goodSchema = new Schema(
     },
 
     size: {
-      type: String,
+      type: [String],
       enum: SIZE,
       required: true,
     },
 
     description: String,
 
-    feedbacks: {
-      type: Schema.Types.ObjectId,
-      ref: "Feedback",
-    },
+    feedbacks: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Feedback",
+      },
+    ],
 
     prevDescription: String,
 
