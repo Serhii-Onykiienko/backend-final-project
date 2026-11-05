@@ -1,0 +1,758 @@
+openapi: 3.0.3
+
+info:
+  title: Clothica API
+  version: 1.0.0
+  description: |
+    REST API інтернет-магазину Clothica.
+
+    Цей OpenAPI-документ охоплює всі 17 ендпоінтів, наявних у роутерах
+    бекенду станом на 05.11.2026.
+
+    **Поточний стан:** реалізація більшості контролерів ще в процесі.
+    Маршрути та Joi-правила для Auth (register/login), Categories, Goods і
+    Feedbacks взято з коду. Формати відповідей для незавершених контролерів,
+    а також тіла запитів Users, Orders, Subscriptions і password reset —
+    попередні та потребують погодження з командою.
+
+    Swagger UI описує запланований контракт, але не реалізує бізнес-логіку
+    чи захист маршрутів самостійно.
+
+servers:
+  - url: http://localhost:4000
+    description: Локальний Express-сервер
+
+tags:
+  - name: Auth
+    description: Реєстрація, вхід, сесії та відновлення пароля
+  - name: Users
+    description: Профіль поточного користувача; авторизація планується
+  - name: Categories
+    description: Категорії товарів
+  - name: Goods
+    description: Каталог товарів і фільтри
+  - name: Orders
+    description: Замовлення; авторизація та права адміністратора ще не реалізовані
+  - name: Feedbacks
+    description: Відгуки до товарів
+  - name: Subscriptions
+    description: Запити на підписку
+
+paths:
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      operationId: registerUser
+      summary: Зареєструвати користувача
+      description: |
+        Тіло запиту підтверджене `registerUserSchema`.
+        Контролер поки не реалізований; точна відповідь буде визначена пізніше.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUserRequest"
+      responses:
+        "201":
+          description: Реєстрація успішна (планований статус)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Користувач із таким email уже існує (планована помилка)
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: loginUser
+      summary: Увійти в обліковий запис
+      description: |
+        Тіло запиту підтверджене `loginUserSchema`.
+        Поточний тестовий контролер повертає JSON-рядок `"Login OK"`.
+        Остаточну відповідь та спосіб встановлення cookie визначить команда.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginUserRequest"
+      responses:
+        "200":
+          description: Тимчасова тестова відповідь контролера
+          content:
+            application/json:
+              schema:
+                type: string
+                example: Login OK
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutUser
+      summary: Завершити сесію
+      description: |
+        За ТЗ це приватна операція. Middleware авторизації та формат відповіді
+        поки не реалізовані; cookie-контракт не визначений.
+      responses:
+        "200":
+          description: Сесію завершено (планована відповідь)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshUserSession
+      summary: Оновити сесію
+      description: |
+        Маршрут існує. Назви cookie, механіка refresh і формат відповіді
+        ще не визначені в поточній реалізації.
+      responses:
+        "200":
+          description: Сесію оновлено (планована відповідь)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/request-reset-email:
+    post:
+      tags: [Auth]
+      operationId: requestResetEmail
+      summary: Запросити лист для відновлення пароля
+      description: |
+        Маршрут існує, проте `requestResetEmailSchema` ще порожня.
+        Точний формат запиту та відповіді потрібно узгодити.
+      requestBody:
+        required: false
+        description: Формат тіла запиту ще не затверджено
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnspecifiedRequest"
+      responses:
+        "200":
+          description: Запит прийнято (планована відповідь)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      operationId: resetPassword
+      summary: Встановити новий пароль
+      description: |
+        Маршрут існує, проте `resetPasswordSchema` ще порожня.
+        Поля токена та нового пароля поки не затверджені.
+      requestBody:
+        required: false
+        description: Формат тіла запиту ще не затверджено
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnspecifiedRequest"
+      responses:
+        "200":
+          description: Пароль змінено (планована відповідь)
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/users:
+    get:
+      tags: [Users]
+      operationId: getCurrentUser
+      summary: Отримати поточного користувача
+      description: |
+        Приватний маршрут за ТЗ. Middleware авторизації та схема `User`
+        поки не реалізовані; відповідь попередня.
+      responses:
+        "200":
+          description: Дані поточного користувача (попередній контракт)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDraft"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags: [Users]
+      operationId: updateCurrentUser
+      summary: Оновити профіль поточного користувача
+      description: |
+        Приватний маршрут за ТЗ. Дозволені поля для оновлення та
+        `updateCurrentUserSchema` ще не визначені.
+      requestBody:
+        required: false
+        description: Погодити допустимі поля оновлення профілю
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnspecifiedRequest"
+      responses:
+        "200":
+          description: Профіль оновлено (попередній контракт)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/categories:
+    get:
+      tags: [Categories]
+      operationId: getCategories
+      summary: Отримати категорії
+      description: |
+        Пагінація відповідає `getCategoriesSchema`.
+        Форма відповіді зі списком і метаданими є попередньою,
+        оскільки контролер ще не реалізований.
+      parameters:
+        - name: page
+          in: query
+          description: Номер сторінки
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: perPage
+          in: query
+          description: Кількість категорій на сторінці
+          schema:
+            type: integer
+            minimum: 5
+            maximum: 20
+            default: 10
+      responses:
+        "200":
+          description: Список категорій (форма обгортки попередня)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoriesListDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/goods:
+    get:
+      tags: [Goods]
+      operationId: getGoods
+      summary: Отримати товари
+      description: |
+        Параметри відповідають `getGoodsSchema`.
+        Необов'язкові фільтри можна поєднувати.
+        Перевірка `minPrice <= maxPrice` поки не описана в Joi;
+        форму спискової відповіді ще потрібно реалізувати.
+      parameters:
+        - name: page
+          in: query
+          description: Номер сторінки
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: perPage
+          in: query
+          description: Кількість товарів на сторінці
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 12
+        - name: category
+          in: query
+          description: MongoDB ObjectId категорії
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+        - name: gender
+          in: query
+          description: Стать / призначення товару
+          schema:
+            type: string
+            enum: [women, man, unisex]
+        - name: size
+          in: query
+          description: Розмір товару
+          schema:
+            type: string
+            enum: [XS, S, M, L, XL, XXL]
+        - name: minPrice
+          in: query
+          description: Нижня межа ціни
+          schema:
+            type: number
+            minimum: 0
+        - name: maxPrice
+          in: query
+          description: Верхня межа ціни
+          schema:
+            type: number
+            minimum: 0
+      responses:
+        "200":
+          description: Список товарів (форма обгортки попередня)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoodsListDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/goods/{goodsId}:
+    get:
+      tags: [Goods]
+      operationId: getGoodById
+      summary: Отримати товар за ID
+      description: |
+        Параметр `goodsId` відповідає маршруту та Joi-валідації.
+        Безпосередня відповідь об'єктом `Good` є попереднім контрактом:
+        остаточну обгортку має підтвердити реалізація контролера.
+      parameters:
+        - name: goodsId
+          in: path
+          required: true
+          description: MongoDB ObjectId товару
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+      responses:
+        "200":
+          description: Товар знайдено (попередній контракт)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Good"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/orders:
+    get:
+      tags: [Orders]
+      operationId: getOrders
+      summary: Отримати замовлення поточного користувача
+      description: |
+        Приватний маршрут за ТЗ. `getOrdersSchema` ще порожня,
+        формат спискової відповіді не затверджений.
+      responses:
+        "200":
+          description: Список замовлень (попередня відповідь)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderDraft"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Orders]
+      operationId: createOrder
+      summary: Створити замовлення
+      description: |
+        Публічний маршрут за ТЗ. Поля замовлення та `createOrderSchema`
+        ще не визначені командою.
+      requestBody:
+        required: false
+        description: Потрібно узгодити склад замовлення та покупця
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnspecifiedRequest"
+      responses:
+        "201":
+          description: Замовлення створено (планований статус)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    patch:
+      tags: [Orders]
+      operationId: updateOrderStatus
+      summary: Змінити статус замовлення
+      description: |
+        Адміністраторська операція за ТЗ. Фактичний Express-маршрут
+        зараз `PATCH /api/orders` **без `:orderId`**.
+        Спосіб передавання ID, допустимі статуси та тіло запиту треба
+        узгодити й додати до `updateOrderStatusSchema`.
+        Перевірка ролі admin поки не підключена.
+      requestBody:
+        required: false
+        description: Формат зміни статусу ще не визначено
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnspecifiedRequest"
+      responses:
+        "200":
+          description: Статус замовлення оновлено (планована відповідь)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/feedbacks:
+    get:
+      tags: [Feedbacks]
+      operationId: getFeedbacks
+      summary: Отримати відгуки товару
+      description: |
+        Фільтр `productId` обов'язковий згідно з `getFeedbacksSchema`.
+        Форма спискової відповіді попередня.
+      parameters:
+        - name: page
+          in: query
+          description: Номер сторінки
+          schema:
+            type: integer
+            minimum: 1
+        - name: perPage
+          in: query
+          description: Кількість відгуків на сторінці
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 12
+        - name: productId
+          in: query
+          required: true
+          description: MongoDB ObjectId товару
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+      responses:
+        "200":
+          description: Список відгуків (форма обгортки попередня)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbacksListDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      tags: [Feedbacks]
+      operationId: createFeedback
+      summary: Створити відгук
+      description: |
+        Поля й обмеження підтверджені `createFeedbackSchema`.
+        `description` необов'язковий за поточною Joi-схемою;
+        `date` і `category` у POST не передаються — їх заповнення
+        потрібно визначити в контролері.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeedbackRequest"
+      responses:
+        "201":
+          description: Відгук створено (планований статус)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feedback"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/subscriptions:
+    post:
+      tags: [Subscriptions]
+      operationId: createSubscription
+      summary: Створити запит на підписку
+      description: |
+        Публічний маршрут за ТЗ. Модель `Subscription` і
+        `createSubscriptionSchema` ще порожні, тому поля запиту не вигадуються.
+      requestBody:
+        required: false
+        description: Тіло запиту потрібно узгодити з командою
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnspecifiedRequest"
+      responses:
+        "201":
+          description: Підписку створено (планований статус)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionDraft"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Підписка вже існує (можлива майбутня помилка)
+
+components:
+  responses:
+    BadRequest:
+      description: Некоректний формат або дані запиту; Joi/Celebrate повертає 400
+    Unauthorized:
+      description: Потрібна авторизація (планована перевірка)
+    Forbidden:
+      description: Недостатньо прав (планована перевірка ролі)
+    NotFound:
+      description: Ресурс не знайдено (має бути реалізовано в контролері)
+
+  schemas:
+    ObjectId:
+      type: string
+      description: MongoDB ObjectId, 24 шістнадцяткові символи
+      pattern: "^[0-9a-fA-F]{24}$"
+      example: "6877b9f116ae59c7b60d0107"
+
+    Category:
+      type: object
+      description: Поля підтверджені початковим JSON і Mongoose-моделлю
+      properties:
+        _id:
+          $ref: "#/components/schemas/ObjectId"
+        name:
+          type: string
+          example: Футболки та сорочки
+
+    Good:
+      type: object
+      description: Поля підтверджені початковим JSON і Mongoose-моделлю
+      properties:
+        _id:
+          $ref: "#/components/schemas/ObjectId"
+        name:
+          type: string
+          example: Світшот 'Minimal Black'
+        category:
+          $ref: "#/components/schemas/ObjectId"
+        image:
+          type: string
+          format: uri
+          example: https://ftp.goit.study/img/goods/6877b9f116ae59c7b60d0107.webp
+        price:
+          type: object
+          properties:
+            value:
+              type: number
+              example: 1299
+            currency:
+              type: string
+              example: грн
+        size:
+          type: array
+          items:
+            type: string
+            enum: [XS, S, M, L, XL, XXL]
+          example: [S, M, L]
+        description:
+          type: string
+          example: Універсальний світшот із м'якого трикотажу.
+        feedbacks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ObjectId"
+        prevDescription:
+          type: string
+          example: Лаконічний базовий світшот.
+        gender:
+          type: string
+          enum: [women, man, unisex]
+          example: unisex
+        characteristics:
+          type: array
+          items:
+            type: string
+          example:
+            - "Матеріал: 80% бавовна, 20% поліестер"
+            - "Крій: прямий"
+
+    Feedback:
+      type: object
+      description: Поля підтверджені початковим JSON і Mongoose-моделлю
+      properties:
+        _id:
+          $ref: "#/components/schemas/ObjectId"
+        author:
+          type: string
+          example: Максим
+        date:
+          type: string
+          format: date
+          description: Рядок у форматі YYYY-MM-DD (у Mongoose наразі String)
+          example: "2025-10-20"
+        description:
+          type: string
+          example: Дуже якісний світшот. Рекомендую!
+        rate:
+          type: number
+          minimum: 1
+          maximum: 5
+          example: 4.5
+        category:
+          type: string
+          example: Худі та кофти
+        productId:
+          $ref: "#/components/schemas/ObjectId"
+
+    RegisterUserRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 32
+          example: Олена
+        email:
+          type: string
+          format: email
+          maxLength: 64
+          example: olena@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+          example: Example123!
+      additionalProperties: false
+
+    LoginUserRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 64
+          example: olena@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+          example: Example123!
+      additionalProperties: false
+
+    CreateFeedbackRequest:
+      type: object
+      required: [author, rate, productId]
+      description: Поля точно відповідають поточній Joi-схемі
+      properties:
+        author:
+          type: string
+          minLength: 2
+          example: Максим
+        description:
+          type: string
+          maxLength: 260
+          example: Дуже якісний світшот. Рекомендую!
+        rate:
+          type: number
+          minimum: 1
+          maximum: 5
+          example: 4.5
+        productId:
+          $ref: "#/components/schemas/ObjectId"
+      additionalProperties: false
+
+    CategoriesListDraft:
+      type: object
+      description: |
+        ПОПЕРЕДНІЙ формат пагінованої відповіді.
+        Підтвердити назви ключів під час реалізації контролера.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        perPage:
+          type: integer
+          example: 10
+        totalItems:
+          type: integer
+          example: 8
+
+    GoodsListDraft:
+      type: object
+      description: |
+        ПОПЕРЕДНІЙ формат пагінованої відповіді.
+        Підтвердити назви ключів під час реалізації контролера.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Good"
+        page:
+          type: integer
+          example: 1
+        perPage:
+          type: integer
+          example: 12
+        totalItems:
+          type: integer
+          example: 108
+
+    FeedbacksListDraft:
+      type: object
+      description: |
+        ПОПЕРЕДНІЙ формат пагінованої відповіді.
+        Підтвердити назви ключів під час реалізації контролера.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Feedback"
+        page:
+          type: integer
+          example: 1
+        perPage:
+          type: integer
+          example: 12
+        totalItems:
+          type: integer
+          example: 31
+
+    UserDraft:
+      type: object
+      description: |
+        Контракт відповіді User ще не визначено: модель `User` порожня.
+        Не повертати хеш пароля чи інші секретні поля.
+      additionalProperties: true
+
+    OrderDraft:
+      type: object
+      description: Контракт замовлення ще не визначено; модель `Order` порожня
+      additionalProperties: true
+
+    SubscriptionDraft:
+      type: object
+      description: Контракт підписки ще не визначено; модель `Subscription` порожня
+      additionalProperties: true
+
+    UnspecifiedRequest:
+      type: object
+      description: |
+        Тимчасова заглушка. Поля запиту ще не визначені у Joi
+        і мають бути затверджені командою.
+      additionalProperties: true

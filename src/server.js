@@ -1,4 +1,7 @@
 // src/server.js
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -23,6 +26,8 @@ import usersRouter from "./routes/usersRouters.js";
 const app = express();
 const PORT = process.env.PORT ?? 4000;
 
+const swaggerDocument = YAML.load("./swagger/openapi.yaml");
+
 app.use(helmet());
 app.use(logger);
 app.use(express.json());
@@ -43,6 +48,10 @@ app.use(goodsRouter);
 app.use(ordersRouter);
 app.use(subscriptionsRouter);
 app.use(usersRouter);
+
+//? ================Swagger================
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 //? ================Middlewares================
 
