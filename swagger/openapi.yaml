@@ -19,8 +19,10 @@ info:
     чи захист маршрутів самостійно.
 
 servers:
+  - url: /
+    description: Поточний сервер
   - url: http://localhost:4000
-    description: Локальний Express-сервер
+    description: Локальний сервер
 
 tags:
   - name: Auth
