@@ -99,13 +99,18 @@ paths:
       operationId: logoutUser
       summary: Завершити сесію
       description: |
-        За ТЗ це приватна операція. Middleware авторизації та формат відповіді
-        поки не реалізовані; cookie-контракт не визначений.
+        Видаляє MongoDB-сесію за `sessionId` із cookie, якщо cookie наявна,
+        після чого очищає `accessToken`, `refreshToken` і `sessionId`.
+        Якщо cookie `sessionId` немає, також повертає `204`.
+        Тіло запиту не потрібне. Окремий middleware авторизації
+        до цього маршруту наразі не підключений.
+
+        Cookie встановлюються як `HttpOnly`, `Secure`, `SameSite=None`.
+        Поточні терміни дії: `accessToken` — 15 хвилин,
+        `refreshToken` і `sessionId` — 24 години.
       responses:
-        "200":
-          description: Сесію завершено (планована відповідь)
-        "401":
-          $ref: "#/components/responses/Unauthorized"
+        "204":
+          description: Сесію завершено; тіло відповіді відсутнє
 
   /api/auth/refresh:
     post:
@@ -113,13 +118,39 @@ paths:
       operationId: refreshUserSession
       summary: Оновити сесію
       description: |
-        Маршрут існує. Назви cookie, механіка refresh і формат відповіді
-        ще не визначені в поточній реалізації.
+        Приймає `sessionId` і `refreshToken` з cookie; тіло запиту не потрібне.
+        Знаходить і атомарно видаляє стару сесію за цією парою.
+        Якщо refresh-токен прострочений, очищає cookie та повертає `401`.
+        Інакше створює нову сесію, встановлює три нові cookie
+        (`accessToken`, `refreshToken`, `sessionId`) і повертає `200`.
+
+        Cookie встановлюються як `HttpOnly`, `Secure`, `SameSite=None`.
+        Термін дії `accessToken` — 15 хвилин; інших двох — 24 години.
+        У браузері cookie надсилаються автоматично за відповідних налаштувань.
       responses:
         "200":
-          description: Сесію оновлено (планована відповідь)
+          description: Сесію успішно оновлено; встановлено нові cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+                    example: Session refreshed
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          description: |
+            Відсутні `sessionId` або `refreshToken`, сесію не знайдено
+            чи refresh-токен прострочений.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Session not found
 
   /api/auth/request-reset-email:
     post:
