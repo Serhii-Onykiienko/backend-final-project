@@ -39,8 +39,10 @@ const userSchema = new Schema(
 );
 
 userSchema.pre('save', function () {
-  if (!this.username) {
+  if (!this.username && this.email) {
     this.username = this.email.trim();
+    } else if (!this.username && this.telephone) {
+        this.username = this.telephone.trim();
   }
 });
 
