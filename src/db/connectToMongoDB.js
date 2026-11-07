@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 export const connectMongoDB = async () => {
   try {
-    const mongoUrl = process.env.MONGO_URL;
+    const mongoUrl = process.env.DB_HOST;
 
     await mongoose.connect(mongoUrl, {
       dbName: "final-project",
