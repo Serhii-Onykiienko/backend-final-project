@@ -1,4 +1,5 @@
 import { Schema, model } from "mongoose";
+import { ROLES } from "../constants/roles.js";
 
 const userSchema = new Schema(
     {
@@ -12,27 +13,29 @@ const userSchema = new Schema(
         type: String,
         required: false,
         unique: true,
+        sparse: true, // Дозволяє багатьом користувачам не мати email, але якщо він є — він унікальний
         trim: true, 
     },
     telephone: {
         type: String,
         required: false,
         unique: true,
+        sparse: true, // Дозволяє багатьом користувачам не мати телефон, але якщо він є — він унікальний
         trim: true, 
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
-        default: 'user',
+        enum: Object.values(ROLES),
+        default: ROLES.user,
     },
     password: {
         type: String,   
         required: true,
-        unique: true,
+        // unique: false,
         trim: true,
     },
     },
-    { timestamps: true },
+    { timestamps: true, versionKey: false },
 );
 
 userSchema.pre('save', function () {
