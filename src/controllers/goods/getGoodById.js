@@ -1,14 +1,15 @@
 // Отримати один товар
 
-import { Good } from "../../models/good";
+import { Good } from "../../models/good.js";
+import createHttpError from "http-errors";
 
 export const getGoodById = async (req, res) => {
-  const { goodId } = req.params;
-  const note = await Good.findOne({ _id: goodId, userId: req.user._id });
+  const { goodsId } = req.params;
+  const good = await Good.findOne({ _id: goodsId });
 
-  if (!note) {
+  if (!good) {
     throw createHttpError(404, "Good not found");
   }
 
-  res.status(200).json(note);
+  res.status(200).json(good);
 };
