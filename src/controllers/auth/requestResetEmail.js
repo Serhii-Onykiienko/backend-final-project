@@ -1,3 +1,8 @@
+import jwt from "jsonwebtoken";
+import createHttpError from "http-errors";
+import { sendEmail } from "../../utils/sendEmail.js";
+import { User } from "../../models/user.js";
+
 export const requestResetEmail = async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
   if (!user) {
@@ -9,7 +14,7 @@ export const requestResetEmail = async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: '15m' },
   );
-  const link = `${process.env.FRONTEND_DOMAIN}/reset-password?token=${token}`;
+  const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
   try {
     await sendEmail({

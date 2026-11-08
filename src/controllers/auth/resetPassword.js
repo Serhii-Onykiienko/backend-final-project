@@ -1,3 +1,9 @@
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import createHttpError from "http-errors";
+import { User } from "../../models/user.js";
+import { Session } from "../../models/session.js";
+
 export const resetPassword = async (req, res) => {
   const { token, password } = req.body;
 
