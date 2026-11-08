@@ -6,7 +6,7 @@ import {Session} from '../models/session.js';
 
 
 export const authorization = async (req, res, next) => {
-  const userRole = req.user.role; 
+  // const userRole = req.user.role; 
   const { sessionId, accessToken } = req.cookies;
 
   if (!sessionId || !accessToken) {
@@ -23,10 +23,14 @@ export const authorization = async (req, res, next) => {
     throw createHttpError(401, 'Unauthorized: Invalid accessToken');
   }
 
+  const user = await User.findById(session.userId);
 
-
-    if (userRole === ROLES.admin) {
-        return next();
+  if(!user) {
+    throw createHttpError(401, 'Unauthorized: User not found');
+  }
+  // перевірка current ролі користувача яка зараз встановлена в базі даних
+    if (user.role === ROLES.admin) {
+        req.user.role = ROLES.admin;
     }  
     
     next();
