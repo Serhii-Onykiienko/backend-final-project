@@ -2,10 +2,6 @@ import { Schema, model } from "mongoose";
 
 const userSchema = new Schema(
   {
-    username: {
-      type: String,
-      trim: true,
-    },
     email: {
       type: String,
       required: true,
@@ -37,6 +33,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
       trim: true,
+      unique: true,
     },
     city: {
       type: String,
@@ -57,11 +54,5 @@ userSchema.methods.toJSON = function () {
   delete obj.password;
   return obj;
 };
-
-userSchema.pre("save", function () {
-  if (!this.username) {
-    this.username = this.email;
-  }
-});
 
 export const User = model("User", userSchema);
