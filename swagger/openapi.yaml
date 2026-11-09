@@ -637,7 +637,7 @@ components:
         tel:
           type: string
           pattern: ^0[0-9]{9}$
-          example: 0991234567
+          example: "0991234567"
         city:
           type: string
           description: Необов’язкове поле профілю.
@@ -675,7 +675,7 @@ components:
         tel:
           type: string
           pattern: ^0[0-9]{9}$
-          example: 0991234567
+          example: "0991234567"
         email:
           type: string
           format: email
@@ -698,7 +698,7 @@ components:
         tel:
           type: string
           pattern: ^0[0-9]{9}$
-          example: 0991234567
+          example: "0991234567"
         password:
           type: string
           format: password
@@ -726,7 +726,7 @@ components:
               $ref: "#/components/schemas/ObjectId"
             phone:
               type: string
-              example: 0991234567
+              example: "0991234567"
     RefreshResponse:
       type: object
       required:
@@ -1011,7 +1011,7 @@ components:
         tel:
           type: string
           pattern: ^[0-9]{10}$
-          example: 0991234567
+          example: "0991234567"
         city:
           type: string
           minLength: 3
@@ -1069,7 +1069,7 @@ components:
           example: Коваленко
         tel:
           type: string
-          example: 0991234567
+          example: "0991234567"
         city:
           type: string
           example: Київ
