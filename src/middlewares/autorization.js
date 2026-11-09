@@ -1,5 +1,4 @@
 import createHttpError from 'http-errors';
-import { ROLES } from '../constants/roles.js';
 import { User } from '../models/user.js';
 import {Session} from '../models/session.js';
 
@@ -19,7 +18,7 @@ export const authorization = async (req, res, next) => {
   } 
  
   const isAccessTokenValid = session.accessTokenValidUntil < new Date();
-  if (!isAccessTokenValid) {
+  if (isAccessTokenValid) {
     throw createHttpError(401, 'Unauthorized: Invalid accessToken');
   }
 
@@ -28,10 +27,9 @@ export const authorization = async (req, res, next) => {
   if(!user) {
     throw createHttpError(401, 'Unauthorized: User not found');
   }
-  
-    // if (user.role === ROLES.admin) {
-    //     req.user.role = ROLES.admin;
-    // }  
-    
+
+  req.user = user;
+
     next();
 }
+
