@@ -7,9 +7,9 @@ import { setSessionCookies } from "../../utils/setSessionCookies.js";
 export const registerUser = async (req, res) => {
   const { name, email, tel, password } = req.body;
 
-  const existingUser = await User.findOne({ email });
+  const existingUser = await User.findOne({ tel });
   if (existingUser) {
-    throw createHttpError(400, "Email in use");
+    throw createHttpError(400, "Tel in use");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
