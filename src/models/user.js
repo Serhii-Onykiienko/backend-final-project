@@ -8,41 +8,45 @@ const userSchema = new Schema(
       unique: true,
       trim: true,
     },
+
     password: {
       type: String,
       required: true,
       minlength: 8,
       trim: true,
     },
+
     role: {
       type: String,
       enum: ["user", "admin"],
       default: "user",
     },
+
     name: {
       type: String,
       required: true,
       trim: true,
     },
+
     surname: {
       type: String,
-      required: true,
       trim: true,
     },
+
     tel: {
       type: String,
       required: true,
       trim: true,
       unique: true,
     },
+
     city: {
       type: String,
-      required: true,
       trim: true,
     },
+
     postOffice: {
       type: Number,
-      required: true,
       min: 1,
     },
   },
