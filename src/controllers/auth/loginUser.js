@@ -1,3 +1,4 @@
+
 import bcrypt from "bcrypt";
 import { User } from "../../models/user.js";
 import { setSessionCookies } from "../../utils/setSessionCookies.js";
@@ -13,7 +14,7 @@ export const loginUser = async (req, res) => {
     
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    return res.status(401).json({ message: 'Invalid password.'})
+    return res.status(401).json({ message: 'Invalid phone number or password.' })
   }
 
   const session = await createSession(user._id);
