@@ -1,5 +1,6 @@
 import { Joi, Segments } from "celebrate";
 import { isValidObjectId } from "mongoose";
+import { SIZE } from "../constants/tags.js";
 
 // Кастомний валідатор для ObjectId
 const objectIdValidator = (value, helpers) => {
@@ -35,7 +36,7 @@ export const createOrderSchema = {
       "string.max": "City should have at most {#limit} characters",
       "any.required": "City is required",
     }),
-    postOffice: Joi.number().min(1).max(20000).integer().required().messages({
+    postOffice: Joi.number().min(1).max(999999).integer().required().messages({
       "number.base": "Post office must be a number",
       "number.min": "Post office should have at least {#limit} characters",
       "number.max": "Post office should have at most {#limit} characters",
@@ -47,7 +48,7 @@ export const createOrderSchema = {
       "string.min": "Comment should have at least {#limit} characters",
       "string.max": "Comment should have at most {#limit} characters",
     }),
-    amount: Joi.number().min(1).max(20).integer().required().messages({
+    amount: Joi.number().min(1).max(50000).integer().required().messages({
       "number.base": "Amount Of Order must be a number",
       "number.min": "Amount Of Order should have at least {#limit} characters",
       "number.max": "Amount Of Order should have at most {#limit} characters",
@@ -61,6 +62,13 @@ export const createOrderSchema = {
         Joi.object({
           goodId: Joi.string().custom(objectIdValidator),
           quantity: Joi.number(),
+          size: Joi.string()
+            .valid(...SIZE)
+            .required()
+            .messages({
+              "string.base": "Size must be a string",
+              "any.only": `Size must be one of: ${SIZE.join(", ")} `,
+            }),
         }),
       )
       .messages({

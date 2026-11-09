@@ -15,7 +15,21 @@ export const getGoodsSchema = {
 
     minPrice: Joi.number().min(0),
     maxPrice: Joi.number().min(0),
-  }),
+  })
+
+   .custom((value, helpers) => {
+      if (
+        value.minPrice !== undefined &&
+        value.maxPrice !== undefined &&
+        value.minPrice > value.maxPrice
+      ) {
+        return helpers.message({
+          custom: "minPrice cannot be greater than maxPrice",
+        });
+      }
+
+      return value;
+    }),
 };
 
 export const getGoodByIdSchema = {
