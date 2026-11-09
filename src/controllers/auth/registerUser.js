@@ -14,8 +14,9 @@ export const registerUser = async (req, res) => {
   }
 
   const existingUser = await User.findOne({ tel });
+
   if (existingUser) {
-    throw createHttpError(400, "Tel in use");
+    throw createHttpError(409, "Tel already in use");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
