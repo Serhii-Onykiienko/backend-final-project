@@ -28,7 +28,6 @@ const PORT = process.env.PORT ?? 4000;
 
 const swaggerDocument = YAML.load("./swagger/openapi.yaml");
 
-dotenv.config();
 app.use(helmet());
 app.use(logger);
 app.use(express.json());

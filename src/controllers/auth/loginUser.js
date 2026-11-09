@@ -1,14 +1,14 @@
 import bcrypt from "bcrypt";
 import { User } from "../../models/user.js";
 import { setSessionCookies } from "../../utils/setSessionCookies.js";
-import { createSession } from "../../utils/session.js";
+import { createSession } from "../../services/auth/createSession.js";
 
 export const loginUser = async (req, res) => {
     const { tel, password } = req.body;
 
     const user = await User.findOne({ tel });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid phone number.' });
+      return res.status(401).json({ message: 'Invalid phone number or password.' });
     }
     
   const isPasswordValid = await bcrypt.compare(password, user.password);
