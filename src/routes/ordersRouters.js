@@ -10,7 +10,6 @@ ordersRouter.get("/api/orders", authenticate, ctrl.getOrders);
 ordersRouter.post(
   "/api/orders",
   celebrate(createOrderSchema),
-  authenticate,
   ctrl.createOrder,
 );
 ordersRouter.patch("/api/orders", authenticate, ctrl.updateOrderStatus);

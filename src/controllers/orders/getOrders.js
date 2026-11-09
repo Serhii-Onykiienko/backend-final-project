@@ -1,4 +1,4 @@
-//? Отримати замовлення
+import Order from '../../models/order.js';
 
 export const getOrders = async (req, res) => {
 
