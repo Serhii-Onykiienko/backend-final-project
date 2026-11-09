@@ -1,29 +1,27 @@
 import bcrypt from "bcrypt";
 import { User } from "../../models/user.js";
+import { setSessionCookies } from "../../utils/setSessionCookies.js";
+import { createSession } from "../../utils/session.js";
 
-export const loginUser = async (req, res, next) => {
-  try {
-    const { phone, password } = req.body;
+export const loginUser = async (req, res) => {
+    const { tel, password } = req.body;
 
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ tel });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid phone number.' });
     }
-
-    let isValidPassword = false;
     
-    if (user.password.startsWith("$2b$")) {
-      isValidPassword = await bcrypt.compare(password, user.password);
-    } else {
-      isValidPassword = password === user.password;
-    }
-
-    if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    res.status(200).json({ message: "Login OK" });
-  } catch (error) {
-    next(error);
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({ message: 'Invalid password.'})
   }
+
+  const session = await createSession(user._id);
+  setSessionCookies(res, session);
+  
+  return res.status(200).json({
+    message: 'Login successful.',
+    user: { id: user._id, phone: user.tel }
+  });
+
 };

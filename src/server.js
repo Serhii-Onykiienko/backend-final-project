@@ -6,8 +6,6 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import "dotenv/config";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
 
 import { errors } from "celebrate";
 import { notFoundHandler } from "./middlewares/notFoundHandler.js";
@@ -71,10 +69,3 @@ await connectMongoDB();
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-mongoose.connect(process.env.DB_HOST)
-  .then(() => console.log("Database connection successful"))
-  .catch(error => {
-    console.error("❌ Failed to connect to MongoDB:", error.message);
-    process.exit(1);
-  });

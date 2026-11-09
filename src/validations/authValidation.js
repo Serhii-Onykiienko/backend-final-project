@@ -7,10 +7,11 @@ export const registerUserSchema = {
     password: Joi.string().min(8).max(128).required(),
   }),
 };
-
 export const loginUserSchema = {
   [Segments.BODY]: Joi.object({
-    phone: Joi.string().max(20).trim().required(),
+    tel: Joi.string()
+    .pattern(/^0\d{9}$/)
+    .required(),
     password: Joi.string().min(8).max(128).required(),
   }),
 };

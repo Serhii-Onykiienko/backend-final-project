@@ -1,16 +1,5 @@
 import { Schema, model } from "mongoose";
 
-const userSchema = new Schema({
-    phone: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-});
+const userSchema = new Schema({});
 
 export const User = model("User", userSchema);
