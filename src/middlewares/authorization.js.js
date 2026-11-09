@@ -17,8 +17,8 @@ export const authorization = async (req, res, next) => {
     throw createHttpError(401, 'Unauthorized: Invalid session');
   } 
  
-  const isAccessTokenValid = session.accessTokenValidUntil < new Date();
-  if (isAccessTokenValid) {
+  const isAccessTokenExpired = session.accessTokenValidUntil < new Date();
+  if (isAccessTokenExpired) {
     throw createHttpError(401, 'Unauthorized: Invalid accessToken');
   }
 
