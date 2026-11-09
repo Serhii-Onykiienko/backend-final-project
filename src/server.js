@@ -28,6 +28,7 @@ const PORT = process.env.PORT ?? 4000;
 
 const swaggerDocument = YAML.load("./swagger/openapi.yaml");
 
+
 app.use(helmet());
 app.use(logger);
 app.use(express.json());
@@ -69,4 +70,4 @@ await connectMongoDB();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-});
+  });
