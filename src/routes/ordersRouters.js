@@ -13,6 +13,6 @@ ordersRouter.post(
   celebrate(createOrderSchema),
   ctrl.createOrder,
 );
-ordersRouter.patch("/api/orders", authorization, authorizeAdmin, ctrl.updateOrderStatus);
+ordersRouter.patch("/api/orders/:orderId", authorization, authorizeAdmin, ctrl.updateOrderStatus);
 
 export default ordersRouter;
