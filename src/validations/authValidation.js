@@ -11,7 +11,7 @@ export const registerUserSchema = {
 
 export const loginUserSchema = {
   [Segments.BODY]: Joi.object({
-    phone: Joi.string().max(20).trim().required(),
+    
     tel: Joi.string()
     .pattern(/^0\d{9}$/)
     .required(),
