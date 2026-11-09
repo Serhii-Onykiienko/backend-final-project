@@ -1,4 +1,5 @@
 import { model, Schema } from "mongoose";
+import { SIZE } from "../constants/tags.js";
 
 const orderedGoodSchema = new Schema(
   {
@@ -11,6 +12,11 @@ const orderedGoodSchema = new Schema(
       type: Number,
       required: true,
       min: 1,
+    },
+    size: {
+      type: String,
+      enum: SIZE,
+      required: true,
     },
   },
   { _id: false },
