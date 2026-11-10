@@ -13,7 +13,7 @@ export const loginUserSchema = {
   [Segments.BODY]: Joi.object({
     
     tel: Joi.string()
-    .pattern(/^0\d{9}$/)
+    .pattern(/^\+380\d{9}$/)
     .required(),
     password: Joi.string().min(8).max(128).required(),
   }),
