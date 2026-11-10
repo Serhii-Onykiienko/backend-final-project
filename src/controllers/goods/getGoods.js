@@ -1,6 +1,4 @@
-//? Отримати всі товари
 
-// export const getGoods = async (req, res) => {};
 
 
 import { goods } from "../../services/index.js";
