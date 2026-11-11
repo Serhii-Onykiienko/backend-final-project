@@ -14,7 +14,7 @@ export const requestResetEmail = async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: '15m' },
   );
-  const link = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  const link = `${process.env.FRONTEND_URL}/auth/reset-password?token=${token}`;
 
   try {
     await sendEmail({

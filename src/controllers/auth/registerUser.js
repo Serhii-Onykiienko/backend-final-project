@@ -7,23 +7,19 @@ import { setSessionCookies } from "../../utils/setSessionCookies.js";
 export const registerUser = async (req, res) => {
   const { name, email, tel, password } = req.body;
 
-  const existingEmail = await User.findOne({ email });
-
-  if (existingEmail) {
-    throw createHttpError(409, "Email already in use");
+  if (await User.findOne({ tel })) {
+    throw createHttpError(400, "Tel in use");
   }
-
-  const existingUser = await User.findOne({ tel });
-
-  if (existingUser) {
-    throw createHttpError(409, "Tel already in use");
+  // скидання пароля шукає користувача за email, тому він має бути унікальним. Це при умові, що є два схожі електронні адреси, але з різними регістрами. Тому перевірка на унікальність email є обов'язковою.
+  if (await User.findOne({ email })) {
+    throw createHttpError(400, "Email in use");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({
     name,
-    email,
     tel,
+    email,
     password: hashedPassword,
   });
 
