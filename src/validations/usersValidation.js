@@ -2,7 +2,8 @@ import { Joi, Segments } from "celebrate";
 
 // Схема, яка каже: "Запит має бути порожнім, жодних додаткових полів у тілі"
 const phoneRegExp = /^(?:\+?38)?0[0-9]{9}$/;
-export const updateUserSchema = Joi.object({
+export const updateUserSchema= {
+[Segments.BODY]: Joi.object({
   name: Joi.string().min(2).max(30).messages({
     'string.base': 'Name must be a string',
     'string.min': 'Name must be at least 2 characters long',
@@ -18,10 +19,9 @@ export const updateUserSchema = Joi.object({
     'string.base': 'City must be a string',
     'string.min': 'City must be at least 2 characters long',
   }),
-  postOffice: Joi.alternatives().try(Joi.number(), Joi.string()).messages({
-    'alternatives.types': 'Post office must be a number or a string',
+  postOffice: Joi.number().integer().min(1).messages({
+    'number.base': 'Post office must be a number',
+    'number.min': 'Post office must be a positive integer',
   }),
-});
-
-
-export const updateCurrentUserSchema = {};
+  }),
+};
