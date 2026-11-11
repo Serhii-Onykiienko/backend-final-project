@@ -6,7 +6,7 @@ import { celebrate } from "celebrate";
 
 const usersRouter = Router();
 
-usersRouter.get("/api/users", authorization,celebrate(updateUserSchema), ctrl.getCurrentUser);
+usersRouter.get("/api/users", authorization, ctrl.getCurrentUser);
 usersRouter.patch("/api/users", authorization,celebrate(updateUserSchema), ctrl.updateCurrentUser);
 
 export default usersRouter;
