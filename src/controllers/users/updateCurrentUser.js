@@ -1,8 +1,8 @@
-import { User } from "../models/User.js";
+import { User } from "../models/user.js";
 
 export const updateCurrentUser = async (req, res) => {
   try {
-    const userId = req.user.id; 
+    const userId = req.user._id; 
     const { name, surname, tel, city, postOffice } = req.body;
 
     if (tel) {
