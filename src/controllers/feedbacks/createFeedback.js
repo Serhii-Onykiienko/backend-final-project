@@ -1,16 +1,15 @@
-//? Створити Feedback
-
-import { Category } from "../../models/category.js";
 import { Feedback } from "../../models/feedback.js";
-import { Good } from "../../models/good.js";
+import createHttpError from "http-errors";
 
-export const createFeedback = async (req, res) => {
-    const{productId}=req.body;
-    const good = await Good.findById(productId);
-    if(!good){
-        return res.status(404).json({message: "Product not found"})
-    }
-    const category = await Category.findById(good.category)
-    const feedback = await Feedback.create({...req.body, date: new Date().toISOString().slice(0,10), category: category.name})
-    res.status(201).json(feedback)
+export const createFeedback = async (req, res, next) => {
+  try {
+    const newFeedback = await Feedback.create(req.body);
+    res.status(201).json({
+      status: 201,
+      message: "Feedback successfully created",
+      data: newFeedback,
+    });
+  } catch (error) {
+    next(error);
+  }
 };

@@ -1,7 +1,7 @@
 import { model, Schema } from "mongoose";
 import { SIZE } from "../constants/tags.js";
 
-const orderedGoodSchema = new Schema(
+const orderedGoodsSchema = new Schema(
   {
     goodId: {
       type: Schema.Types.ObjectId,
@@ -69,7 +69,7 @@ const orderSchema = new Schema(
       default: "inProcess",
     },
     goodsOrderList: {
-      type: [orderedGoodSchema],
+      type: [orderedGoodsSchema],
       required: true,
       validate: {
         validator: (value) => value.length > 0,
