@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
   title: Clothica API
-  version: 1.1.0
-  description: "REST API інтернет-магазину Clothica. Документ звірено з фактичними роутерами, контролерами, Joi-схемами й Mongoose-моделями гілки main після PR #34 (коміт 0ad157f, 10.11.2026). Описано 17 HTTP-операцій. Ендпоінти Users PATCH, Feedbacks GET/POST і Subscriptions POST ще не реалізовані: їхні контролери порожні й можуть не завершувати запит. Відомі обмеження у створенні замовлення та скиданні пароля зазначені біля операцій. Валідація за відсутніх/додаткових полів виконується Joi/Celebrate. Swagger описує поточну реалізацію, але не виправляє ці обмеження."
+  version: 1.2.0
+  description: "Документація Clothica API на 12.11.2026: 17 HTTP-операцій. Усі маршрути мають реалізовані контролери. Для register/login Joi вимагає +380XXXXXXXXX; PATCH /api/users приймає також старі формати, а POST /api/orders досі приймає номер із 10 цифр. Відомі обмеження: сума й статус замовлення приймаються від клієнта, userId не прив’язується до сесії, POST відгуку не перевіряє існування товару. Try it out надсилає реальні запити на поточний сервер."
 servers:
-  - url: http://localhost:4000
-    description: Локальний Express API
+  - url: /
+    description: Поточний сервер (локальний або Render)
 tags:
   - name: Auth
     description: Реєстрація, вхід, завершення й оновлення сесії, відновлення пароля.
@@ -18,9 +18,9 @@ tags:
   - name: Orders
     description: Оформлення замовлень, історія користувача та зміна статусу адміністратором.
   - name: Feedbacks
-    description: Відгуки (контролери ще не реалізовані).
+    description: Створення та отримання відгуків за товаром із пагінацією.
   - name: Subscriptions
-    description: Підписка (контролер ще не реалізований).
+    description: Підписка на розсилку за email.
 paths:
   /api/auth/register:
     post:
@@ -28,7 +28,7 @@ paths:
         - Auth
       summary: Реєстрація користувача
       operationId: registerUser
-      description: Публічний маршрут. Реєстрація за ім’ям, телефоном, email та паролем. Поля профілю surname, city, postOffice не потрібні під час реєстрації. Пароль хешується bcrypt і не повертається. За успішної реєстрації створюється сесія й установлюються три HttpOnly cookies. Якщо email або телефон уже зайняті, повертається 409.
+      description: Публічний маршрут. Реєстрація за ім’ям, телефоном, email та паролем. Поля профілю surname, city, postOffice не потрібні під час реєстрації. Пароль хешується bcrypt і не повертається. За успішної реєстрації створюється сесія й установлюються три HttpOnly cookies. Якщо email або телефон уже зайняті, контролер повертає 400.
       requestBody:
         required: true
         content:
@@ -49,12 +49,6 @@ paths:
                 type: string
         "400":
           $ref: "#/components/responses/BadRequest"
-        "409":
-          description: Email або телефон уже зайняті.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Message"
         "500":
           $ref: "#/components/responses/InternalError"
   /api/auth/login:
@@ -216,24 +210,34 @@ paths:
     patch:
       tags:
         - Users
-      summary: Оновити власний профіль — ще НЕ реалізовано
+      summary: Оновити власний профіль
       operationId: updateCurrentUser
-      description: Маршрут захищений authorization, але контролер updateCurrentUser наразі порожній і не надсилає відповіді. Формат PATCH ще не погоджений; не використовуйте для реальних запитів.
+      description: Оновлення name, surname, tel, city, postOffice. Joi допускає 0XXXXXXXXX, 380XXXXXXXXX і +380XXXXXXXXX. Повторний tel повертає 400. Контролер наразі також повертає 400 з catch на інші помилки.
       security:
         - sessionIdCookie: []
           accessTokenCookie: []
       requestBody:
-        required: false
-        description: Тимчасова заглушка. Поля ще не визначені командою.
+        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UnspecifiedRequest"
+              $ref: "#/components/schemas/UpdateCurrentUserRequest"
       responses:
+        "200":
+          description: Дані профілю оновлено.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateCurrentUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        default:
-          description: Контролер ще не реалізований; успішна відповідь наразі не визначена (запит може залишитися без відповіді).
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/categories:
     get:
       tags:
@@ -310,6 +314,7 @@ paths:
           schema:
             type: string
             enum:
+              - XXS
               - XL
               - XS
               - S
@@ -393,7 +398,7 @@ paths:
         - Orders
       summary: Створити замовлення (можна без авторизації)
       operationId: createOrder
-      description: "Публічний маршрут. Контролер самостійно генерує orderNumber; status за замовчуванням inProcess. Поточна реалізація зберігає userId: null навіть коли cookies авторизованого користувача передані — це відомий баг, переданий іншому розробнику. У Joi quantity і goodId у позиції не позначені як required, але в Mongoose-моделі вони обов’язкові; для успішного замовлення передавайте обидва поля. Відоме обмеження: amount і status наразі приймаються від клієнта без серверного перерахунку/захисту від підміни."
+      description: "Публічний маршрут. Контролер самостійно генерує orderNumber; status за замовчуванням inProcess. Поточна реалізація зберігає userId: null навіть коли cookies авторизованого користувача передані — це відомий баг, переданий іншому розробнику. У Joi goodId, quantity і size обов’язкові; quantity — ціле число 1–100 для кожної позиції. Відоме обмеження: amount і status наразі приймаються від клієнта без серверного перерахунку/захисту від підміни."
       requestBody:
         required: true
         content:
@@ -636,8 +641,9 @@ components:
           example: Коваленко
         tel:
           type: string
-          pattern: ^0[0-9]{9}$
-          example: "0991234567"
+          pattern: '^(?:\+?38)?0[0-9]{9}$'
+          description: Нові акаунти реєструються через +380, історичні номери можуть відрізнятися.
+          example: "+380991234567"
         city:
           type: string
           description: Необов’язкове поле профілю.
@@ -674,8 +680,8 @@ components:
           example: Олена
         tel:
           type: string
-          pattern: ^0[0-9]{9}$
-          example: "0991234567"
+          pattern: '^\+380[0-9]{9}$'
+          example: "+380991234567"
         email:
           type: string
           format: email
@@ -697,8 +703,8 @@ components:
       properties:
         tel:
           type: string
-          pattern: ^0[0-9]{9}$
-          example: "0991234567"
+          pattern: '^\+380[0-9]{9}$'
+          example: "+380991234567"
         password:
           type: string
           format: password
@@ -884,6 +890,7 @@ components:
           items:
             type: string
             enum:
+              - XXS
               - XL
               - XS
               - S
@@ -975,10 +982,12 @@ components:
         quantity:
           type: integer
           minimum: 1
+          maximum: 100
           example: 1
         size:
           type: string
           enum:
+            - XXS
             - XL
             - XS
             - S
