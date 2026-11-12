@@ -60,8 +60,8 @@ export const createOrderSchema = {
     goodsOrderList: Joi.array()
       .items(
         Joi.object({
-          goodId: Joi.string().custom(objectIdValidator),
-          quantity: Joi.number(),
+          goodId: Joi.string().custom(objectIdValidator).required(),
+          quantity: Joi.number().min(1).max(100).required(),
           size: Joi.string()
             .valid(...SIZE)
             .required()
@@ -72,9 +72,9 @@ export const createOrderSchema = {
         }),
       )
       .messages({
-        "array.base": "Ingredients must be an array",
-        "array.min": "Ingredients must contain at least {#limit} items",
-        "array.max": "Ingredients must contain at most {#limit} items",
+        "array.base": "Order list must be an array",
+        "array.min": "Order list must contain at least {#limit} items",
+        "array.max": "Order list must contain at most {#limit} items",
       })
       .min(1)
       .required(),
