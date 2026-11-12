@@ -1,6 +1,7 @@
 import { Joi, Segments } from "celebrate";
 import { isValidObjectId } from "mongoose";
 import { SIZE } from "../constants/tags.js";
+import { PHONE_REG_EXP } from "../constants/phoneRegExp.js";
 
 // Кастомний валідатор для ObjectId
 const objectIdValidator = (value, helpers) => {
@@ -21,15 +22,12 @@ export const createOrderSchema = {
       "string.max": "Surname should have at most {#limit} characters",
       "any.required": "Surname is required",
     }),
-    tel: Joi.string()
-      .pattern(/^\d{10}$/)
-      .required()
-      .messages({
-        "string.base": "Tel must be a string",
-        "string.pattern.base": "Phone number must contain exactly 10 digits",
-        "any.required": "Tel is required",
-        "string.empty": "Tel cannot be empty",
-      }),
+    tel: Joi.string().pattern(PHONE_REG_EXP).required().messages({
+      "string.base": "Tel must be a string",
+      "string.pattern.base": "Phone number must be in the format +380XXXXXXXXX",
+      "any.required": "Tel is required",
+      "string.empty": "Tel cannot be empty",
+    }),
     city: Joi.string().min(3).max(30).required().messages({
       "string.base": "City must be a string",
       "string.min": "City should have at least {#limit} characters",
