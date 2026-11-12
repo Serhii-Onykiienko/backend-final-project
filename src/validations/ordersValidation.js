@@ -61,7 +61,7 @@ export const createOrderSchema = {
       .items(
         Joi.object({
           goodId: Joi.string().custom(objectIdValidator).required(),
-          quantity: Joi.number().min(1).max(100).required(),
+          quantity: Joi.number().integer().min(1).max(100).required(),
           size: Joi.string()
             .valid(...SIZE)
             .required()
