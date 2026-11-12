@@ -808,11 +808,36 @@ components:
     UpdateCurrentUserRequest:
       type: object
       properties:
-        name: { type: string, minLength: 2, maxLength: 30 }
-        surname: { type: string, minLength: 2, maxLength: 30 }
+        name:
+          type: string
+          minLength: 2
+          maxLength: 30
+        surname:
+          type: string
+          minLength: 2
+          maxLength: 30
         tel:
           type: string
-          pattern: '^(?:\\+?38)?0[0-9]{9}      type: object
+          pattern: '^(?:\+?38)?0[0-9]{9}$'
+          example: "+380991234567"
+        city:
+          type: string
+          minLength: 2
+        postOffice:
+          type: integer
+          minimum: 1
+      additionalProperties: false
+    UpdateCurrentUserResponse:
+      type: object
+      required: [message, user]
+      properties:
+        message:
+          type: string
+          example: Дані успішно оновлено
+        user:
+          $ref: "#/components/schemas/User"
+    Category:
+      type: object
       required:
         - _id
         - name
