@@ -1,26 +1,26 @@
 openapi: 3.0.3
 info:
   title: Clothica API
-  version: 1.1.0
-  description: "REST API інтернет-магазину Clothica. Документ звірено з фактичними роутерами, контролерами, Joi-схемами й Mongoose-моделями гілки main після PR #34 (коміт 0ad157f, 10.11.2026). Описано 17 HTTP-операцій. Ендпоінти Users PATCH, Feedbacks GET/POST і Subscriptions POST ще не реалізовані: їхні контролери порожні й можуть не завершувати запит. Відомі обмеження у створенні замовлення та скиданні пароля зазначені біля операцій. Валідація за відсутніх/додаткових полів виконується Joi/Celebrate. Swagger описує поточну реалізацію, але не виправляє ці обмеження."
+  version: 1.2.0
+  description: Документація Clothica API. Версія від 12.11.2026. Описано 17 HTTP операцій. Телефони у форматі +380XXXXXXXXX.
 servers:
-  - url: http://localhost:4000
-    description: Локальний Express API
+  - url: /
+    description: Поточний сервер — локальний або Render
 tags:
   - name: Auth
-    description: Реєстрація, вхід, завершення й оновлення сесії, відновлення пароля.
+    description: Сесії та відновлення пароля
   - name: Users
-    description: Профіль поточного користувача (потрібна сесія).
+    description: Профіль авторизованого користувача
   - name: Categories
-    description: Категорії каталогу.
+    description: Категорії каталогу
   - name: Goods
-    description: Товари, пошук за фільтрами, пагінація.
+    description: Товари каталогу
   - name: Orders
-    description: Оформлення замовлень, історія користувача та зміна статусу адміністратором.
+    description: Оформлення та історія замовлень
   - name: Feedbacks
-    description: Відгуки (контролери ще не реалізовані).
+    description: Відгуки товарів
   - name: Subscriptions
-    description: Підписка (контролер ще не реалізований).
+    description: Email-підписки
 paths:
   /api/auth/register:
     post:
@@ -28,7 +28,7 @@ paths:
         - Auth
       summary: Реєстрація користувача
       operationId: registerUser
-      description: Публічний маршрут. Реєстрація за ім’ям, телефоном, email та паролем. Поля профілю surname, city, postOffice не потрібні під час реєстрації. Пароль хешується bcrypt і не повертається. За успішної реєстрації створюється сесія й установлюються три HttpOnly cookies. Якщо email або телефон уже зайняті, повертається 409.
+      description: Публічний маршрут. Телефон обов'язково +380XXXXXXXXX. У поточному контролері дубль email або tel повертає 400.
       requestBody:
         required: true
         content:
@@ -37,33 +37,22 @@ paths:
               $ref: "#/components/schemas/RegisterUserRequest"
       responses:
         "201":
-          description: Користувача зареєстровано; встановлені cookies сесії.
+          description: Користувача створено, встановлено три HttpOnly cookies
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-          headers:
-            Set-Cookie:
-              description: "Три заголовки Set-Cookie: accessToken, refreshToken, sessionId."
-              schema:
-                type: string
         "400":
           $ref: "#/components/responses/BadRequest"
-        "409":
-          description: Email або телефон уже зайняті.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Message"
         "500":
           $ref: "#/components/responses/InternalError"
   /api/auth/login:
     post:
       tags:
         - Auth
-      summary: Вхід за номером телефону та паролем
+      summary: Вхід за телефоном і паролем
       operationId: loginUser
-      description: Публічний маршрут. За правильних даних створює сесію та встановлює HttpOnly cookies accessToken, refreshToken, sessionId. Відповідь містить user.id і user.phone (не tel).
+      description: Публічний маршрут. Поле phone у відповіді називається саме phone, не tel.
       requestBody:
         required: true
         content:
@@ -72,60 +61,46 @@ paths:
               $ref: "#/components/schemas/LoginUserRequest"
       responses:
         "200":
-          description: Успішний вхід.
+          description: Вхід успішний, встановлено три HttpOnly cookies
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/LoginResponse"
-          headers:
-            Set-Cookie:
-              description: Три заголовки Set-Cookie для сесії.
-              schema:
-                type: string
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
-          description: Неправильний телефон або пароль.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Message"
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
   /api/auth/logout:
     post:
       tags:
         - Auth
-      summary: Вихід з облікового запису
+      summary: Вихід з акаунта
       operationId: logoutUser
-      description: Маршрут не має обов’язкового middleware authorization. Якщо cookie sessionId передано, контролер видаляє відповідну сесію; після цього очищає три cookies. Навіть без cookie відповідає 204.
+      description: Видаляє сесію за cookie sessionId, якщо її передано. Middleware авторизації на маршруті немає.
       responses:
         "204":
-          description: Сесію завершено; тіло відповіді відсутнє.
+          description: Cookies очищено; тіла відповіді немає
         "500":
           $ref: "#/components/responses/InternalError"
   /api/auth/refresh:
     post:
       tags:
         - Auth
-      summary: Оновлення сесії за refreshToken
+      summary: Оновлення сесії
       operationId: refreshUserSession
-      description: Потрібні cookies sessionId і refreshToken. Стара сесія видаляється, створюється нова, встановлюються нові три cookies. Термін дії refreshToken — 1 доба.
+      description: Вимагає cookies sessionId і refreshToken; стара сесія видаляється.
       security:
         - sessionIdCookie: []
           refreshTokenCookie: []
       responses:
         "200":
-          description: Нову сесію створено.
+          description: Сесію оновлено; встановлено нові cookies
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RefreshResponse"
-          headers:
-            Set-Cookie:
-              description: Три оновлені заголовки Set-Cookie.
-              schema:
-                type: string
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -134,37 +109,33 @@ paths:
     post:
       tags:
         - Auth
-      summary: Запросити лист для відновлення пароля
+      summary: Запросити відновлення пароля
       operationId: requestResetEmail
-      description: Публічний маршрут. Для наявного email надсилається лист із JWT-токеном терміном дії 15 хвилин. Для неіснуючого email також повертає 200, щоб не розкривати наявність акаунта.
+      description: Надсилає лист із посиланням і JWT, чинним 15 хвилин, для користувача з указаним email.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RequestResetEmailRequest"
+              $ref: "#/components/schemas/ResetEmailRequest"
       responses:
         "200":
-          description: Запит опрацьовано; відповідь однакова для наявного й відсутнього email.
+          description: Однакова відповідь для наявного й неіснуючого email
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RequestResetEmailResponse"
+                $ref: "#/components/schemas/ResetEmailResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "500":
-          description: Не вдалося надіслати лист або сталася помилка сервера.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Message"
+          $ref: "#/components/responses/InternalError"
   /api/auth/reset-password:
     post:
       tags:
         - Auth
-      summary: Встановити новий пароль за токеном
+      summary: Встановити новий пароль
       operationId: resetPassword
-      description: "Публічний маршрут. Перевіряє підпис JWT і термін його дії (15 хв), змінює пароль та видаляє всі сесії користувача. Відоме обмеження: токен не стає одноразовим і може повторно використовуватися до закінчення терміну дії."
+      description: JWT чинний 15 хвилин; реалізація не забезпечує його одноразовість.
       requestBody:
         required: true
         content:
@@ -173,7 +144,7 @@ paths:
               $ref: "#/components/schemas/ResetPasswordRequest"
       responses:
         "200":
-          description: Пароль змінено.
+          description: Пароль змінено, усі сесії користувача видалені
           content:
             application/json:
               schema:
@@ -181,11 +152,7 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
-          description: Недійсний або прострочений токен.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Message"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -194,15 +161,15 @@ paths:
     get:
       tags:
         - Users
-      summary: Отримати власний профіль
+      summary: Поточний користувач
       operationId: getCurrentUser
-      description: "Вимагає авторизації через cookies accessToken і sessionId. Повертає {user: ...} без пароля."
+      description: "Повертає {user: ...} без пароля."
       security:
         - sessionIdCookie: []
           accessTokenCookie: []
       responses:
         "200":
-          description: Поточний користувач.
+          description: Дані профілю
           content:
             application/json:
               schema:
@@ -216,41 +183,51 @@ paths:
     patch:
       tags:
         - Users
-      summary: Оновити власний профіль — ще НЕ реалізовано
+      summary: Оновити профіль
       operationId: updateCurrentUser
-      description: Маршрут захищений authorization, але контролер updateCurrentUser наразі порожній і не надсилає відповіді. Формат PATCH ще не погоджений; не використовуйте для реальних запитів.
+      description: Joi застосовує спільну константу PHONE_REG_EXP для поля tel. Дублікат номера повертає 400. Контролер нині повертає 400 також для інших помилок у catch.
       security:
         - sessionIdCookie: []
           accessTokenCookie: []
       requestBody:
-        required: false
-        description: Тимчасова заглушка. Поля ще не визначені командою.
+        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UnspecifiedRequest"
+              $ref: "#/components/schemas/UpdateUserRequest"
       responses:
+        "200":
+          description: Профіль оновлено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-        default:
-          description: Контролер ще не реалізований; успішна відповідь наразі не визначена (запит може залишитися без відповіді).
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/categories:
     get:
       tags:
         - Categories
-      summary: Список категорій із пагінацією
+      summary: Категорії з пагінацією
       operationId: getCategories
+      description: Контролер дозволяє додаткові query-параметри (Joi .unknown(true)); вони не впливають на вибірку.
       parameters:
         - name: page
           in: query
-          description: Номер сторінки.
+          required: false
           schema:
             type: integer
             minimum: 1
             default: 1
         - name: perPage
           in: query
-          description: Кількість категорій на сторінці.
+          required: false
           schema:
             type: integer
             minimum: 1
@@ -258,7 +235,7 @@ paths:
             default: 6
       responses:
         "200":
-          description: Категорії й метадані пагінації.
+          description: Категорії та метадані
           content:
             application/json:
               schema:
@@ -271,20 +248,20 @@ paths:
     get:
       tags:
         - Goods
-      summary: Каталог товарів із фільтрацією і пагінацією
+      summary: Каталог товарів із фільтрами
       operationId: getGoods
-      description: Фільтри можна поєднувати. Якщо вказано обидві ціни, minPrice не може бути більшим за maxPrice.
+      description: Фільтри можна поєднувати. Якщо задано обидві ціни, minPrice не може бути більшим за maxPrice.
       parameters:
         - name: page
           in: query
-          description: Номер сторінки.
+          required: false
           schema:
             type: integer
             minimum: 1
             default: 1
         - name: perPage
           in: query
-          description: Кількість товарів на сторінці.
+          required: false
           schema:
             type: integer
             minimum: 1
@@ -292,12 +269,12 @@ paths:
             default: 12
         - name: category
           in: query
-          description: ObjectId категорії.
+          required: false
           schema:
             $ref: "#/components/schemas/ObjectId"
         - name: gender
           in: query
-          description: Призначення товару.
+          required: false
           schema:
             type: string
             enum:
@@ -306,10 +283,11 @@ paths:
               - unisex
         - name: size
           in: query
-          description: Розмір товару.
+          required: false
           schema:
             type: string
             enum:
+              - XXS
               - XL
               - XS
               - S
@@ -318,19 +296,19 @@ paths:
               - XXL
         - name: minPrice
           in: query
-          description: Ціна від, включно.
+          required: false
           schema:
             type: number
             minimum: 0
         - name: maxPrice
           in: query
-          description: Ціна до, включно.
+          required: false
           schema:
             type: number
             minimum: 0
       responses:
         "200":
-          description: Товари й метадані пагінації.
+          description: Товари та метадані
           content:
             application/json:
               schema:
@@ -343,18 +321,17 @@ paths:
     get:
       tags:
         - Goods
-      summary: Один товар за MongoDB ObjectId
+      summary: Один товар за ID
       operationId: getGoodById
       parameters:
         - name: goodsId
           in: path
           required: true
-          description: Ідентифікатор товару.
           schema:
             $ref: "#/components/schemas/ObjectId"
       responses:
         "200":
-          description: Об’єкт товару без додаткової обгортки.
+          description: Об'єкт товару без JSON-обгортки
           content:
             application/json:
               schema:
@@ -369,15 +346,15 @@ paths:
     get:
       tags:
         - Orders
-      summary: Останні п’ять замовлень поточного користувача
+      summary: П'ять останніх замовлень користувача
       operationId: getOrders
-      description: "Доступний лише авторизованому користувачу. Повертає масив до 5 замовлень, відсортованих за createdAt від нових до старих; проєкція полів: _id, createdAt, orderNumber, amount, status. Поточний ліміт .limit(5) залишено без змін."
+      description: Сортування createdAt DESC і .limit(5). Фільтр за req.user._id.
       security:
         - sessionIdCookie: []
           accessTokenCookie: []
       responses:
         "200":
-          description: Масив замовлень.
+          description: Масив до п'яти скорочених об'єктів
           content:
             application/json:
               schema:
@@ -391,9 +368,9 @@ paths:
     post:
       tags:
         - Orders
-      summary: Створити замовлення (можна без авторизації)
+      summary: Оформити замовлення
       operationId: createOrder
-      description: "Публічний маршрут. Контролер самостійно генерує orderNumber; status за замовчуванням inProcess. Поточна реалізація зберігає userId: null навіть коли cookies авторизованого користувача передані — це відомий баг, переданий іншому розробнику. У Joi quantity і goodId у позиції не позначені як required, але в Mongoose-моделі вони обов’язкові; для успішного замовлення передавайте обидва поля. Відоме обмеження: amount і status наразі приймаються від клієнта без серверного перерахунку/захисту від підміни."
+      description: Публічний маршрут. Кількість кожної позиції — ціле число 1–100. Тепер tel використовує PHONE_REG_EXP (+380XXXXXXXXX). Контролер довіряє amount/status клієнта і не прив'язує авторизованого користувача до userId (відомі обмеження).
       requestBody:
         required: true
         content:
@@ -402,7 +379,7 @@ paths:
               $ref: "#/components/schemas/CreateOrderRequest"
       responses:
         "201":
-          description: Замовлення створено.
+          description: Замовлення створено
           content:
             application/json:
               schema:
@@ -415,19 +392,18 @@ paths:
     patch:
       tags:
         - Orders
-      summary: Змінити статус замовлення (тільки адміністратор)
+      summary: Змінити статус замовлення
       operationId: updateOrderStatus
-      description: Потрібні авторизація та роль admin. Контролер приймає один із чотирьох статусів. Joi-валідація параметра orderId і тіла PATCH зараз не підключена; некоректний ObjectId може спричинити 500.
-      security:
-        - sessionIdCookie: []
-          accessTokenCookie: []
+      description: Тільки для admin. Joi не підключений; контролер перевіряє перелік статусів. Некоректний ObjectId може дати 500.
       parameters:
         - name: orderId
           in: path
           required: true
-          description: MongoDB ObjectId замовлення.
           schema:
             $ref: "#/components/schemas/ObjectId"
+      security:
+        - sessionIdCookie: []
+          accessTokenCookie: []
       requestBody:
         required: true
         content:
@@ -436,17 +412,13 @@ paths:
               $ref: "#/components/schemas/UpdateOrderStatusRequest"
       responses:
         "200":
-          description: Замовлення з оновленим статусом.
+          description: Замовлення з новим статусом
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Order"
         "400":
-          description: Статус не входить до дозволеного переліку.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Message"
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -459,41 +431,58 @@ paths:
     get:
       tags:
         - Feedbacks
-      summary: Відгуки товару — ще НЕ реалізовано
+      summary: Список відгуків товару
       operationId: getFeedbacks
-      description: Joi перевіряє query, але контролер getFeedbacks порожній і не надсилає відповіді.
+      description: Передавай productId як query, не як частину URL. Відгуки впорядковані за _id DESC. За відсутності відгуків повертає порожній масив.
       parameters:
+        - name: productId
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/ObjectId"
         - name: page
           in: query
-          description: Номер сторінки (Joi не встановлює default).
+          required: false
           schema:
             type: integer
             minimum: 1
+            default: 1
         - name: perPage
           in: query
-          description: Кількість відгуків на сторінці.
+          required: false
           schema:
             type: integer
             minimum: 1
             maximum: 20
             default: 12
-        - name: productId
-          in: query
-          required: true
-          description: MongoDB ObjectId товару.
-          schema:
-            $ref: "#/components/schemas/ObjectId"
       responses:
+        "200":
+          description: Відгуки й пагінація
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedbacksResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
-        default:
-          description: Контролер ще не реалізований; формат успішної відповіді невідомий (запит може залишитися без відповіді).
+        "500":
+          description: "Контролер повертає {error: 'Failed to get feedbacks'}"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to get feedbacks
+                required:
+                  - error
+                additionalProperties: false
     post:
       tags:
         - Feedbacks
-      summary: Створити відгук — ще НЕ реалізовано
+      summary: Створити відгук
       operationId: createFeedback
-      description: Тіло валідоване Joi, але контролер createFeedback порожній і не надсилає відповіді. Поля date і category в POST не передаються.
+      description: Публічний маршрут. Поточний контролер створює Feedback із req.body без перевірки існування Good і не заповнює date/category та не оновлює Good.feedbacks.
       requestBody:
         required: true
         content:
@@ -501,73 +490,92 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateFeedbackRequest"
       responses:
+        "201":
+          description: Відгук створено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateFeedbackResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
-        default:
-          description: Контролер ще не реалізований; формат успішної відповіді невідомий (запит може залишитися без відповіді).
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/subscriptions:
     post:
       tags:
         - Subscriptions
-      summary: Підписка на розсилку — ще НЕ реалізовано
+      summary: Підписатися на розсилку
       operationId: createSubscription
-      description: Роут є, але контролер порожній, модель Subscription має порожню схему, а Joi-валідація не підключена. Формат запиту та відповіді команда ще не погодила.
+      description: Публічний маршрут; у базі email має unique index. Email не приводиться автоматично до нижнього регістру.
       requestBody:
-        required: false
-        description: Тимчасова заглушка без затверджених полів.
+        required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UnspecifiedRequest"
+              $ref: "#/components/schemas/CreateSubscriptionRequest"
       responses:
-        default:
-          description: Контролер ще не реалізований; формат успішної відповіді невідомий (запит може залишитися без відповіді).
+        "201":
+          description: Email додано до підписок
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSubscriptionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Цей email уже підписаний
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
-    accessTokenCookie:
-      type: apiKey
-      in: cookie
-      name: accessToken
-      description: Короткоживучий HttpOnly cookie (15 хв). Видається під час register/login/refresh.
     sessionIdCookie:
       type: apiKey
       in: cookie
       name: sessionId
-      description: HttpOnly cookie з MongoDB ID сесії (1 доба).
+      description: HttpOnly cookie із MongoDB ID сесії
+    accessTokenCookie:
+      type: apiKey
+      in: cookie
+      name: accessToken
+      description: HttpOnly cookie доступу (15 хвилин)
     refreshTokenCookie:
       type: apiKey
       in: cookie
       name: refreshToken
-      description: HttpOnly cookie для оновлення сесії (1 доба).
+      description: HttpOnly cookie оновлення (1 доба)
   responses:
     BadRequest:
-      description: Joi/Celebrate повертає 400 для невалідних вхідних даних.
+      description: "400: невалідні дані (Joi/Celebrate) або помилка контролера"
       content:
         application/json:
           schema:
             oneOf:
-              - $ref: "#/components/schemas/ValidationError"
               - $ref: "#/components/schemas/Message"
+              - $ref: "#/components/schemas/ValidationError"
     Unauthorized:
-      description: Дані сесії відсутні, недійсні або строк їх дії завершився.
+      description: "401: потрібна чинна сесія"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Message"
     Forbidden:
-      description: "Недостатньо прав: потрібна роль admin."
+      description: "403: потрібна роль admin"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Message"
     NotFound:
-      description: Ресурс не знайдено.
+      description: "404: ресурс не знайдено"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Message"
     InternalError:
-      description: Помилка сервера. У production повертається узагальнене повідомлення.
+      description: "500: помилка сервера"
       content:
         application/json:
           schema:
@@ -576,22 +584,28 @@ components:
     ObjectId:
       type: string
       pattern: ^[0-9a-fA-F]{24}$
-      description: MongoDB ObjectId (24 шістнадцяткові символи).
+      description: MongoDB ObjectId, 24 шістнадцяткові символи
       example: 6877b9f116ae59c7b60d0135
+    PhoneNumber:
+      type: string
+      pattern: ^\+380\d{9}$
+      example: "+380991234567"
+      description: 'Той самий патерн, що й JS-константа PHONE_REG_EXP: /^\+380\d{9}$/'
+    Email:
+      type: string
+      format: email
+      example: olena@example.com
     Message:
       type: object
-      required:
-        - message
       properties:
         message:
           type: string
           example: Something went wrong. Please try again later.
+      required:
+        - message
+      additionalProperties: true
     ValidationError:
       type: object
-      required:
-        - statusCode
-        - error
-        - message
       properties:
         statusCode:
           type: integer
@@ -605,67 +619,58 @@ components:
         validation:
           type: object
           additionalProperties: true
-          description: "Деталі перевірки: query/body/params, keys, message."
+      required:
+        - statusCode
+        - error
+        - message
+      additionalProperties: true
     User:
       type: object
-      required:
-        - _id
-        - email
-        - name
-        - role
-        - tel
       properties:
         _id:
           $ref: "#/components/schemas/ObjectId"
-        email:
+        name:
           type: string
-          format: email
-          example: olena@example.com
+          example: Олена
+        email:
+          $ref: "#/components/schemas/Email"
+        tel:
+          $ref: "#/components/schemas/PhoneNumber"
         role:
           type: string
           enum:
             - user
             - admin
           example: user
-        name:
-          type: string
-          example: Олена
         surname:
           type: string
-          description: Необов’язкове поле профілю.
           example: Коваленко
-        tel:
-          type: string
-          pattern: ^0[0-9]{9}$
-          example: "0991234567"
         city:
           type: string
-          description: Необов’язкове поле профілю.
           example: Київ
         postOffice:
           type: integer
           minimum: 1
-          description: Необов’язковий номер відділення.
           example: 12
         createdAt:
           type: string
           format: date-time
-          example: "2026-11-09T21:48:03.577Z"
         updatedAt:
           type: string
           format: date-time
-          example: "2026-11-09T21:48:03.577Z"
         __v:
           type: integer
           example: 0
-      description: Публічна форма User; поле password не включається до JSON.
+      required:
+        - _id
+        - name
+        - email
+        - tel
+        - role
+      additionalProperties: true
+      description: User без password; модель видаляє пароль у toJSON
     RegisterUserRequest:
       type: object
-      required:
-        - name
-        - tel
-        - email
-        - password
       properties:
         name:
           type: string
@@ -673,9 +678,7 @@ components:
           maxLength: 32
           example: Олена
         tel:
-          type: string
-          pattern: ^0[0-9]{9}$
-          example: "0991234567"
+          $ref: "#/components/schemas/PhoneNumber"
         email:
           type: string
           format: email
@@ -688,17 +691,17 @@ components:
           maxLength: 128
           writeOnly: true
           example: Example123!
+      required:
+        - name
+        - tel
+        - email
+        - password
       additionalProperties: false
     LoginUserRequest:
       type: object
-      required:
-        - tel
-        - password
       properties:
         tel:
-          type: string
-          pattern: ^0[0-9]{9}$
-          example: "0991234567"
+          $ref: "#/components/schemas/PhoneNumber"
         password:
           type: string
           format: password
@@ -706,92 +709,130 @@ components:
           maxLength: 128
           writeOnly: true
           example: Example123!
+      required:
+        - tel
+        - password
       additionalProperties: false
     LoginResponse:
       type: object
-      required:
-        - message
-        - user
       properties:
         message:
           type: string
           example: Login successful.
         user:
           type: object
-          required:
-            - id
-            - phone
           properties:
             id:
               $ref: "#/components/schemas/ObjectId"
             phone:
-              type: string
-              example: "0991234567"
-    RefreshResponse:
-      type: object
+              $ref: "#/components/schemas/PhoneNumber"
+          required:
+            - id
+            - phone
+          additionalProperties: false
       required:
         - message
+        - user
+      additionalProperties: false
+    RefreshResponse:
+      type: object
       properties:
         message:
           type: string
           example: Session refreshed
-    RequestResetEmailRequest:
-      type: object
-      required:
-        - email
-      properties:
-        email:
-          type: string
-          format: email
-          example: olena@example.com
-      additionalProperties: false
-    RequestResetEmailResponse:
-      type: object
       required:
         - message
+      additionalProperties: false
+    ResetEmailRequest:
+      type: object
+      properties:
+        email:
+          $ref: "#/components/schemas/Email"
+      required:
+        - email
+      additionalProperties: false
+    ResetEmailResponse:
+      type: object
       properties:
         message:
           type: string
           example: Password reset email sent successfully
+      required:
+        - message
+      additionalProperties: false
     ResetPasswordRequest:
       type: object
-      required:
-        - token
-        - password
       properties:
         token:
           type: string
-          minLength: 1
-          description: JWT з посилання в листі.
-          example: JWT_TOKEN_FROM_EMAIL
+          example: eyJhbGciOi...
         password:
           type: string
           format: password
           minLength: 8
           maxLength: 128
           writeOnly: true
-          example: NewExample123!
+          example: NewPassword123!
+      required:
+        - token
+        - password
       additionalProperties: false
     ResetPasswordResponse:
       type: object
-      required:
-        - message
       properties:
         message:
           type: string
           example: Password reset successfully
+      required:
+        - message
+      additionalProperties: false
     CurrentUserResponse:
       type: object
-      required:
-        - user
       properties:
         user:
           $ref: "#/components/schemas/User"
+      required:
+        - user
+      additionalProperties: false
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 30
+          example: Олена
+        surname:
+          type: string
+          minLength: 2
+          maxLength: 30
+          example: Коваленко
+        tel:
+          $ref: "#/components/schemas/PhoneNumber"
+        city:
+          type: string
+          minLength: 2
+          example: Київ
+        postOffice:
+          type: integer
+          minimum: 1
+          example: 12
+      additionalProperties: false
+      description: PATCH приймає будь-яку комбінацію дозволених полів; Joi не вимагає мінімум одного поля.
+    UpdateUserResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Дані успішно оновлено
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - message
+        - user
+      additionalProperties: false
     Category:
       type: object
-      required:
-        - _id
-        - name
       properties:
         _id:
           $ref: "#/components/schemas/ObjectId"
@@ -800,17 +841,13 @@ components:
           example: Сукні
         image:
           type: string
-          format: uri
-          description: Необов’язкове зображення категорії.
-          example: https://example.com/category/dresses.webp
+          example: https://example.com/category.webp
+      required:
+        - _id
+        - name
+      additionalProperties: true
     CategoriesPage:
       type: object
-      required:
-        - categories
-        - totalItems
-        - page
-        - perPage
-        - totalPages
       properties:
         categories:
           type: array
@@ -832,12 +869,15 @@ components:
           type: integer
           minimum: 0
           example: 1
+      required:
+        - categories
+        - totalItems
+        - page
+        - perPage
+        - totalPages
+      additionalProperties: false
     CategoriesResponse:
       type: object
-      required:
-        - status
-        - message
-        - data
       properties:
         status:
           type: integer
@@ -847,11 +887,13 @@ components:
           example: Successfully found categories!
         data:
           $ref: "#/components/schemas/CategoriesPage"
+      required:
+        - status
+        - message
+        - data
+      additionalProperties: false
     Price:
       type: object
-      required:
-        - value
-        - currency
       properties:
         value:
           type: number
@@ -859,12 +901,9 @@ components:
         currency:
           type: string
           example: грн
+      additionalProperties: false
     Good:
       type: object
-      required:
-        - _id
-        - name
-        - category
       properties:
         _id:
           $ref: "#/components/schemas/ObjectId"
@@ -875,8 +914,7 @@ components:
           $ref: "#/components/schemas/ObjectId"
         image:
           type: string
-          format: uri
-          example: https://ftp.goit.study/img/goods/6877b9f116ae59c7b60d0135.webp
+          example: https://example.com/good.webp
         price:
           $ref: "#/components/schemas/Price"
         size:
@@ -884,6 +922,7 @@ components:
           items:
             type: string
             enum:
+              - XXS
               - XL
               - XS
               - S
@@ -892,33 +931,33 @@ components:
               - XXL
         description:
           type: string
-          example: Опис товару.
+          example: Опис товару
         feedbacks:
           type: array
           items:
             $ref: "#/components/schemas/ObjectId"
         prevDescription:
           type: string
-          example: Короткий опис.
         gender:
           type: string
           enum:
             - women
             - man
             - unisex
-          example: women
         characteristics:
           type: array
           items:
             type: string
+        __v:
+          type: integer
+          example: 0
+      required:
+        - _id
+        - name
+        - category
+      additionalProperties: true
     GoodsPage:
       type: object
-      required:
-        - goods
-        - totalItems
-        - page
-        - perPage
-        - totalPages
       properties:
         goods:
           type: array
@@ -927,7 +966,7 @@ components:
         totalItems:
           type: integer
           minimum: 0
-          example: 108
+          example: 24
         page:
           type: integer
           minimum: 1
@@ -939,13 +978,16 @@ components:
         totalPages:
           type: integer
           minimum: 0
-          example: 9
+          example: 2
+      required:
+        - goods
+        - totalItems
+        - page
+        - perPage
+        - totalPages
+      additionalProperties: false
     GoodsResponse:
       type: object
-      required:
-        - status
-        - message
-        - data
       properties:
         status:
           type: integer
@@ -955,6 +997,11 @@ components:
           example: Successfully found goods!
         data:
           $ref: "#/components/schemas/GoodsPage"
+      required:
+        - status
+        - message
+        - data
+      additionalProperties: false
     OrderStatus:
       type: string
       enum:
@@ -965,20 +1012,18 @@ components:
       example: inProcess
     OrderedGood:
       type: object
-      required:
-        - goodId
-        - quantity
-        - size
       properties:
         goodId:
           $ref: "#/components/schemas/ObjectId"
         quantity:
           type: integer
           minimum: 1
+          maximum: 100
           example: 1
         size:
           type: string
           enum:
+            - XXS
             - XL
             - XS
             - S
@@ -986,17 +1031,13 @@ components:
             - L
             - XXL
           example: M
+      required:
+        - goodId
+        - quantity
+        - size
       additionalProperties: false
     CreateOrderRequest:
       type: object
-      required:
-        - name
-        - surname
-        - tel
-        - city
-        - postOffice
-        - amount
-        - goodsOrderList
       properties:
         name:
           type: string
@@ -1009,9 +1050,7 @@ components:
           maxLength: 30
           example: Коваленко
         tel:
-          type: string
-          pattern: ^[0-9]{10}$
-          example: "0991234567"
+          $ref: "#/components/schemas/PhoneNumber"
         city:
           type: string
           minLength: 3
@@ -1031,20 +1070,67 @@ components:
           type: integer
           minimum: 1
           maximum: 50000
-          description: Поточна реалізація приймає цю суму від клієнта без перерахунку на сервері.
           example: 2599
         status:
-          allOf:
-            - $ref: "#/components/schemas/OrderStatus"
-          description: Необов’язкове поле. Joi дозволяє встановлювати статус клієнтом; за замовчуванням inProcess.
+          $ref: "#/components/schemas/OrderStatus"
         goodsOrderList:
           type: array
-          minItems: 1
           items:
             $ref: "#/components/schemas/OrderedGood"
+          minItems: 1
+      required:
+        - name
+        - surname
+        - tel
+        - city
+        - postOffice
+        - amount
+        - goodsOrderList
       additionalProperties: false
+      description: Сервер поки довіряє переданим amount і status. Кількість 1–100 застосовується до кожної позиції.
     Order:
       type: object
+      properties:
+        _id:
+          $ref: "#/components/schemas/ObjectId"
+        name:
+          type: string
+        surname:
+          type: string
+        tel:
+          $ref: "#/components/schemas/PhoneNumber"
+        city:
+          type: string
+        postOffice:
+          type: integer
+          minimum: 1
+        comment:
+          type: string
+        orderNumber:
+          type: integer
+          example: 7
+        amount:
+          type: number
+          minimum: 1
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        goodsOrderList:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderedGood"
+        userId:
+          oneOf:
+            - $ref: "#/components/schemas/ObjectId"
+            - type: string
+              nullable: true
+          nullable: true
+          description: У POST зараз зазвичай null
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
         - _id
         - name
@@ -1058,85 +1144,39 @@ components:
         - goodsOrderList
         - createdAt
         - updatedAt
+      additionalProperties: true
+    OrderSummary:
+      type: object
       properties:
         _id:
           $ref: "#/components/schemas/ObjectId"
-        name:
+        createdAt:
           type: string
-          example: Олена
-        surname:
-          type: string
-          example: Коваленко
-        tel:
-          type: string
-          example: "0991234567"
-        city:
-          type: string
-          example: Київ
-        postOffice:
-          type: integer
-          minimum: 1
-          example: 12
-        comment:
-          type: string
-          example: Доставка після 15:00
+          format: date-time
         orderNumber:
           type: integer
           example: 7
         amount:
-          type: integer
+          type: number
           example: 2599
         status:
           $ref: "#/components/schemas/OrderStatus"
-        goodsOrderList:
-          type: array
-          items:
-            $ref: "#/components/schemas/OrderedGood"
-        userId:
-          type: string
-          nullable: true
-          pattern: ^[0-9a-fA-F]{24}$
-          example: null
-          description: MongoDB ObjectId або null. Поточний POST зазвичай зберігає null (відомий баг прив’язки до користувача).
-        createdAt:
-          type: string
-          format: date-time
-          example: "2026-11-09T22:10:35.698Z"
-        updatedAt:
-          type: string
-          format: date-time
-          example: "2026-11-09T22:10:35.698Z"
-    OrderSummary:
-      type: object
       required:
         - _id
         - createdAt
         - orderNumber
         - amount
         - status
-      properties:
-        _id:
-          $ref: "#/components/schemas/ObjectId"
-        createdAt:
-          type: string
-          format: date-time
-          example: "2026-11-09T22:10:35.698Z"
-        orderNumber:
-          type: integer
-          example: 7
-        amount:
-          type: integer
-          example: 2599
-        status:
-          $ref: "#/components/schemas/OrderStatus"
+      additionalProperties: false
     UpdateOrderStatusRequest:
       type: object
-      required:
-        - status
       properties:
         status:
           $ref: "#/components/schemas/OrderStatus"
-      description: Контролер перевіряє лише допустимість status; Joi-схема для PATCH ще не підключена.
+      required:
+        - status
+      additionalProperties: true
+      description: У контролері перевіряється status. Joi на цьому маршруті не підключений.
     Feedback:
       type: object
       properties:
@@ -1147,11 +1187,10 @@ components:
           example: Максим
         date:
           type: string
-          description: Mongoose String, не Date.
           example: "2025-10-20"
         description:
           type: string
-          example: Дуже якісний товар.
+          example: Дуже якісний товар
         rate:
           type: number
           minimum: 1
@@ -1162,12 +1201,12 @@ components:
           example: Сукні
         productId:
           $ref: "#/components/schemas/ObjectId"
+      required:
+        - _id
+      additionalProperties: true
+      description: "date і category необов'язкові: нинішній POST їх не заповнює."
     CreateFeedbackRequest:
       type: object
-      required:
-        - author
-        - rate
-        - productId
       properties:
         author:
           type: string
@@ -1176,7 +1215,7 @@ components:
         description:
           type: string
           maxLength: 260
-          example: Дуже якісний товар.
+          example: Дуже якісний товар
         rate:
           type: number
           minimum: 1
@@ -1184,8 +1223,114 @@ components:
           example: 4.5
         productId:
           $ref: "#/components/schemas/ObjectId"
+      required:
+        - author
+        - rate
+        - productId
       additionalProperties: false
-    UnspecifiedRequest:
+    FeedbacksPage:
       type: object
-      additionalProperties: true
-      description: Тимчасовий опис для ще не реалізованого контролера; поля не затверджені.
+      properties:
+        feedbacks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Feedback"
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        perPage:
+          type: integer
+          minimum: 1
+          maximum: 20
+          example: 12
+        totalItems:
+          type: integer
+          minimum: 0
+          example: 4
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 1
+      required:
+        - feedbacks
+        - page
+        - perPage
+        - totalItems
+        - totalPages
+      additionalProperties: false
+    FeedbacksResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: Successfully fetched feedbacks
+        data:
+          $ref: "#/components/schemas/FeedbacksPage"
+      required:
+        - status
+        - message
+        - data
+      additionalProperties: false
+    CreateFeedbackResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: Feedback successfully created
+        data:
+          $ref: "#/components/schemas/Feedback"
+      required:
+        - status
+        - message
+        - data
+      additionalProperties: false
+    CreateSubscriptionRequest:
+      type: object
+      properties:
+        email:
+          $ref: "#/components/schemas/Email"
+      required:
+        - email
+      additionalProperties: false
+    Subscription:
+      type: object
+      properties:
+        _id:
+          $ref: "#/components/schemas/ObjectId"
+        email:
+          $ref: "#/components/schemas/Email"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - _id
+        - email
+        - createdAt
+        - updatedAt
+      additionalProperties: false
+    CreateSubscriptionResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: Successfully subscribed
+        data:
+          $ref: "#/components/schemas/Subscription"
+      required:
+        - status
+        - message
+        - data
+      additionalProperties: false
