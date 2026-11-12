@@ -462,71 +462,83 @@ paths:
           $ref: "#/components/responses/InternalError"
   /api/feedbacks:
     get:
-      tags:
-        - Feedbacks
-      summary: Відгуки товару — ще НЕ реалізовано
+      tags: [Feedbacks]
+      summary: Отримати відгуки товару
       operationId: getFeedbacks
-      description: Joi перевіряє query, але контролер getFeedbacks порожній і не надсилає відповіді.
+      description: Публічний GET. productId — обов'язковий query-параметр. Сортування за _id від нових. Порожній список повертається як 200.
       parameters:
-        - name: page
-          in: query
-          description: Номер сторінки (Joi не встановлює default).
-          schema:
-            type: integer
-            minimum: 1
-        - name: perPage
-          in: query
-          description: Кількість відгуків на сторінці.
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 20
-            default: 12
         - name: productId
           in: query
           required: true
-          description: MongoDB ObjectId товару.
-          schema:
-            $ref: "#/components/schemas/ObjectId"
+          schema: { $ref: "#/components/schemas/ObjectId" }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: perPage
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 20, default: 12 }
       responses:
+        "200":
+          description: Список відгуків і дані пагінації.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedbacksResponse" }
         "400":
           $ref: "#/components/responses/BadRequest"
-        default:
-          description: Контролер ще не реалізований; формат успішної відповіді невідомий (запит може залишитися без відповіді).
+        "500":
+          description: Контролер повертає JSON із полем error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: Failed to get feedbacks }
     post:
-      tags:
-        - Feedbacks
-      summary: Створити відгук — ще НЕ реалізовано
+      tags: [Feedbacks]
+      summary: Створити відгук
       operationId: createFeedback
-      description: Тіло валідоване Joi, але контролер createFeedback порожній і не надсилає відповіді. Поля date і category в POST не передаються.
+      description: Публічний POST. Не перевіряє існування товару і не оновлює Good.feedbacks; поля date/category не встановлюються контролером.
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/CreateFeedbackRequest"
+            schema: { $ref: "#/components/schemas/CreateFeedbackRequest" }
       responses:
+        "201":
+          description: Відгук створений.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreateFeedbackResponse" }
         "400":
           $ref: "#/components/responses/BadRequest"
-        default:
-          description: Контролер ще не реалізований; формат успішної відповіді невідомий (запит може залишитися без відповіді).
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/subscriptions:
     post:
-      tags:
-        - Subscriptions
-      summary: Підписка на розсилку — ще НЕ реалізовано
+      tags: [Subscriptions]
+      summary: Підписка на розсилку
       operationId: createSubscription
-      description: Роут є, але контролер порожній, модель Subscription має порожню схему, а Joi-валідація не підключена. Формат запиту та відповіді команда ще не погодила.
+      description: Публічний POST за email. Дубльований email повертає 409. Нормалізації регістру немає.
       requestBody:
-        required: false
-        description: Тимчасова заглушка без затверджених полів.
+        required: true
         content:
           application/json:
-            schema:
-              $ref: "#/components/schemas/UnspecifiedRequest"
+            schema: { $ref: "#/components/schemas/CreateSubscriptionRequest" }
       responses:
-        default:
-          description: Контролер ще не реалізований; формат успішної відповіді невідомий (запит може залишитися без відповіді).
+        "201":
+          description: Підписку створено.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CreateSubscriptionResponse" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Email уже підписаний.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
     accessTokenCookie:
@@ -793,8 +805,14 @@ components:
       properties:
         user:
           $ref: "#/components/schemas/User"
-    Category:
+    UpdateCurrentUserRequest:
       type: object
+      properties:
+        name: { type: string, minLength: 2, maxLength: 30 }
+        surname: { type: string, minLength: 2, maxLength: 30 }
+        tel:
+          type: string
+          pattern: '^(?:\\+?38)?0[0-9]{9}      type: object
       required:
         - _id
         - name
@@ -1194,7 +1212,49 @@ components:
         productId:
           $ref: "#/components/schemas/ObjectId"
       additionalProperties: false
-    UnspecifiedRequest:
+    FeedbacksPage:
       type: object
-      additionalProperties: true
-      description: Тимчасовий опис для ще не реалізованого контролера; поля не затверджені.
+      required: [feedbacks, page, perPage, totalItems, totalPages]
+      properties:
+        feedbacks:
+          type: array
+          items: { $ref: "#/components/schemas/Feedback" }
+        page: { type: integer, minimum: 1, example: 1 }
+        perPage: { type: integer, minimum: 1, maximum: 20, example: 12 }
+        totalItems: { type: integer, minimum: 0, example: 0 }
+        totalPages: { type: integer, minimum: 0, example: 0 }
+    FeedbacksResponse:
+      type: object
+      required: [status, message, data]
+      properties:
+        status: { type: integer, example: 200 }
+        message: { type: string, example: Successfully fetched feedbacks }
+        data: { $ref: "#/components/schemas/FeedbacksPage" }
+    CreateFeedbackResponse:
+      type: object
+      required: [status, message, data]
+      properties:
+        status: { type: integer, example: 201 }
+        message: { type: string, example: Feedback successfully created }
+        data: { $ref: "#/components/schemas/Feedback" }
+    CreateSubscriptionRequest:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email, example: subscriber@example.com }
+      additionalProperties: false
+    Subscription:
+      type: object
+      required: [_id, email, createdAt, updatedAt]
+      properties:
+        _id: { $ref: "#/components/schemas/ObjectId" }
+        email: { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    CreateSubscriptionResponse:
+      type: object
+      required: [status, message, data]
+      properties:
+        status: { type: integer, example: 201 }
+        message: { type: string, example: Successfully subscribed }
+        data: { $ref: "#/components/schemas/Subscription" }
