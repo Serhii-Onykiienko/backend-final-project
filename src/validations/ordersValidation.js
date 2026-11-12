@@ -24,7 +24,7 @@ export const createOrderSchema = {
     }),
     tel: Joi.string().pattern(PHONE_REG_EXP).required().messages({
       "string.base": "Tel must be a string",
-      "string.pattern.base": "Phone number must contain exactly 10 digits",
+      "string.pattern.base": "Phone number must be in the format +380XXXXXXXXX",
       "any.required": "Tel is required",
       "string.empty": "Tel cannot be empty",
     }),
