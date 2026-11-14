@@ -11,7 +11,11 @@ export const getGoodsSchema = {
 
     gender: Joi.string().valid(...GENDER),
 
-    size: Joi.string().valid(...SIZE),
+   
+size: Joi.alternatives().try(
+  Joi.string().valid(...SIZE),
+  Joi.array().items(Joi.string().valid(...SIZE)).min(1)
+),
 
     minPrice: Joi.number().min(0),
     maxPrice: Joi.number().min(0),
