@@ -11,13 +11,14 @@ export const getFeedbacks = async (req, res) => {
 
     const skip = (Number(page) - 1) * Number(perPage);
 
-    const filter = { productId };
+    const filter = productId ? { productId } : {};
 
     const [feedbacks, totalItems] = await Promise.all([
       Feedback.find(filter)
         .sort({ _id: -1 })
         .skip(skip)
         .limit(Number(perPage))
+        .populate("productId", "name")
         .lean(),
       Feedback.countDocuments(filter),
     ]);
