@@ -6,12 +6,11 @@ import generateOrderNumber from "../../services/generateOrderNumber.js";
 export const createOrder = async (req, res) => {
   const orderNumber = await generateOrderNumber();
 
-  let userId = null;
-  if (req.userId !== undefined) {
-    userId = req.userId;
-  }
-
-  const order = await Order.create({ ...req.body, orderNumber, userId });
+  const order = await Order.create({
+    ...req.body,
+    orderNumber,
+    userId: req.body.userId || null,
+  });
 
   res.status(201).json(order);
 };
