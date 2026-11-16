@@ -9,7 +9,7 @@ export const createOrder = async (req, res) => {
   const order = await Order.create({
     ...req.body,
     orderNumber,
-    userId: req.body.userId || null,
+    userId: req.user?._id || null,
   });
 
   res.status(201).json(order);
