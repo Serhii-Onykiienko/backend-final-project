@@ -6,6 +6,8 @@ const subscriptionSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
+      lowercase: true,
     },
   },
   { versionKey: false, timestamps: true }

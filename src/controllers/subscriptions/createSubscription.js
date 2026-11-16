@@ -3,7 +3,7 @@ import { Subscription } from '../../models/subscription.js';
 
 export const createSubscription = async (req, res, next) => {
   try {
-    const { email } = req.body;
+    const email = req.body.email.trim().toLowerCase();
 
     const existingSub = await Subscription.findOne({ email }).lean();
     if (existingSub) {
