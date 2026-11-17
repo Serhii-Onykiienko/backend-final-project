@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { orders as ctrl } from "../controllers/index.js";
 import { celebrate } from "celebrate";
-import { createOrderSchema, updateOrderStatusSchema} from "../validations/ordersValidation.js";
+import { createOrderSchema, updateOrderStatusSchema, getAllOrdersSchema} from "../validations/ordersValidation.js";
 import { authorization, optionalAuthorization } from "../middlewares/authorization.js";
 import { authorizeAdmin } from "../middlewares/authorizeAdmin.js";
 
@@ -19,5 +19,13 @@ ordersRouter.patch("/api/orders/:orderId",
   authorizeAdmin,
   celebrate(updateOrderStatusSchema),
   ctrl.updateOrderStatus);
+
+ordersRouter.get(
+  "/api/orders/admin",
+  authorization,
+  authorizeAdmin,
+  celebrate(getAllOrdersSchema),
+  ctrl.getAllOrders,
+);
 
 export default ordersRouter;

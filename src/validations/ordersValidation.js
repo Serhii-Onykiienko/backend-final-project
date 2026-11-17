@@ -98,3 +98,11 @@ export const updateOrderStatusSchema = {
       }),
   }),
 };
+
+export const getAllOrdersSchema = {
+  [Segments.QUERY]: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    perPage: Joi.number().integer().min(1).max(50).default(10),
+    status: Joi.string().valid(...ORDER_STATUSES),
+  }),
+};
