@@ -15,6 +15,7 @@ import { getGoodById } from "./goods/getGoodById.js";
 
 import { createOrder } from "./orders/createOrder.js";
 import { getOrders } from "./orders/getOrders.js";
+import { getAllOrders } from "./orders/getAllOrders.js"; 
 import { updateOrderStatus } from "./orders/updateOrderStatus.js";
 
 import { createSubscription } from "./subscriptions/createSubscription.js";
@@ -43,6 +44,7 @@ export const goods = {
 export const orders = {
   createOrder,
   getOrders,
+  getAllOrders,
   updateOrderStatus,
 };
 

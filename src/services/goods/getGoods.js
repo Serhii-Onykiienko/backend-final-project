@@ -10,25 +10,22 @@ export const getGoods = async ({
   minPrice,
   maxPrice,
 }) => {
- 
   const filter = {};
 
-  
   if (category) {
     filter.category = category;
   }
 
-  
   if (gender) {
     filter.gender = gender;
   }
 
-  
-  if (size) {
-    filter.size = size;
+   if (size) {
+    filter.size = {
+      $in: Array.isArray(size) ? size : [size],
+    };
   }
 
-  
   if (minPrice !== undefined || maxPrice !== undefined) {
     filter["price.value"] = {};
 
@@ -41,10 +38,8 @@ export const getGoods = async ({
     }
   }
 
-
   const skip = (page - 1) * perPage;
 
-  
   const [goods, totalItems] = await Promise.all([
     Good.find(filter).skip(skip).limit(perPage),
     Good.countDocuments(filter),

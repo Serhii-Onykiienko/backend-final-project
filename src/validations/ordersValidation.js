@@ -1,6 +1,8 @@
 import { Joi, Segments } from "celebrate";
 import { isValidObjectId } from "mongoose";
 import { SIZE } from "../constants/tags.js";
+import { PHONE_REG_EXP } from "../constants/phoneRegExp.js";
+import { ORDER_STATUSES } from "../constants/orderStatuses.js";
 
 // Кастомний валідатор для ObjectId
 const objectIdValidator = (value, helpers) => {
@@ -21,15 +23,12 @@ export const createOrderSchema = {
       "string.max": "Surname should have at most {#limit} characters",
       "any.required": "Surname is required",
     }),
-    tel: Joi.string()
-      .pattern(/^\d{10}$/)
-      .required()
-      .messages({
-        "string.base": "Tel must be a string",
-        "string.pattern.base": "Phone number must contain exactly 10 digits",
-        "any.required": "Tel is required",
-        "string.empty": "Tel cannot be empty",
-      }),
+    tel: Joi.string().pattern(PHONE_REG_EXP).required().messages({
+      "string.base": "Tel must be a string",
+      "string.pattern.base": "Phone number must be in the format +380XXXXXXXXX",
+      "any.required": "Tel is required",
+      "string.empty": "Tel cannot be empty",
+    }),
     city: Joi.string().min(3).max(30).required().messages({
       "string.base": "City must be a string",
       "string.min": "City should have at least {#limit} characters",
@@ -60,8 +59,8 @@ export const createOrderSchema = {
     goodsOrderList: Joi.array()
       .items(
         Joi.object({
-          goodId: Joi.string().custom(objectIdValidator),
-          quantity: Joi.number(),
+          goodId: Joi.string().custom(objectIdValidator).required(),
+          quantity: Joi.number().integer().min(1).max(100).required(),
           size: Joi.string()
             .valid(...SIZE)
             .required()
@@ -72,15 +71,38 @@ export const createOrderSchema = {
         }),
       )
       .messages({
-        "array.base": "Ingredients must be an array",
-        "array.min": "Ingredients must contain at least {#limit} items",
-        "array.max": "Ingredients must contain at most {#limit} items",
+        "array.base": "Order list must be an array",
+        "array.min": "Order list must contain at least {#limit} items",
+        "array.max": "Order list must contain at most {#limit} items",
       })
       .min(1)
       .required(),
+    userId: Joi.string().custom(objectIdValidator),
   }).min(1),
 };
 
 export const getOrdersSchema = {};
 
-export const updateOrderStatusSchema = {};
+export const updateOrderStatusSchema = {
+  [Segments.PARAMS]: Joi.object({
+    orderId: Joi.string().custom(objectIdValidator).required(),
+  }),
+  [Segments.BODY]: Joi.object({
+    status: Joi.string()
+      .valid(...ORDER_STATUSES)
+      .required()
+      .messages({
+        "string.base": "Status must be a string",
+        "any.only": `Status must be one of: ${ORDER_STATUSES.join(", ")}`,
+        "any.required": "Status is required",
+      }),
+  }),
+};
+
+export const getAllOrdersSchema = {
+  [Segments.QUERY]: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    perPage: Joi.number().integer().min(1).max(50).default(10),
+    status: Joi.string().valid(...ORDER_STATUSES),
+  }),
+};

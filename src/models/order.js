@@ -1,7 +1,8 @@
 import { model, Schema } from "mongoose";
 import { SIZE } from "../constants/tags.js";
+import { ORDER_STATUSES } from "../constants/orderStatuses.js";
 
-const orderedGoodSchema = new Schema(
+const orderedGoodsSchema = new Schema(
   {
     goodId: {
       type: Schema.Types.ObjectId,
@@ -65,11 +66,11 @@ const orderSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["inProcess", "completing", "done", "canceled"],
+      enum: ORDER_STATUSES,
       default: "inProcess",
     },
     goodsOrderList: {
-      type: [orderedGoodSchema],
+      type: [orderedGoodsSchema],
       required: true,
       validate: {
         validator: (value) => value.length > 0,
