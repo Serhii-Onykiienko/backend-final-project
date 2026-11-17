@@ -12,6 +12,7 @@ import { getFeedbacks } from "./feedbacks/getFeedbacks.js";
 
 import { getGoods } from "./goods/getGoods.js";
 import { getGoodById } from "./goods/getGoodById.js";
+import { getPopularGoods } from "./goods/getPopularGoods.js";
 
 import { createOrder } from "./orders/createOrder.js";
 import { getOrders } from "./orders/getOrders.js";
@@ -39,6 +40,7 @@ export const feedbacks = { createFeedback, getFeedbacks };
 export const goods = {
   getGoods,
   getGoodById,
+  getPopularGoods,
 };
 
 export const orders = {
