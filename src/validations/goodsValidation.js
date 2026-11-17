@@ -41,3 +41,9 @@ export const getGoodByIdSchema = {
     goodsId: Joi.string().custom(objectIdValidator).required(),
   }),
 };
+
+export const getPopularGoodsSchema = {
+  [Segments.QUERY]: Joi.object({
+    limit: Joi.number().integer().min(1).max(20).default(12),
+  }),
+};
