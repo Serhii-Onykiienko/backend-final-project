@@ -4,7 +4,8 @@ import { sendEmail } from "../../utils/sendEmail.js";
 import { User } from "../../models/user.js";
 
 export const requestResetEmail = async (req, res) => {
-  const user = await User.findOne({ email: req.body.email });
+  const email = req.body.email.trim().toLowerCase();
+  const user = await User.findOne({ email });
   if (!user) {
     return res.status(200).json({ message: 'Password reset email sent successfully' });
   }
