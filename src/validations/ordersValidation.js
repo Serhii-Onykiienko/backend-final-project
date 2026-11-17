@@ -2,6 +2,7 @@ import { Joi, Segments } from "celebrate";
 import { isValidObjectId } from "mongoose";
 import { SIZE } from "../constants/tags.js";
 import { PHONE_REG_EXP } from "../constants/phoneRegExp.js";
+import { ORDER_STATUSES } from "../constants/orderStatuses.js";
 
 // Кастомний валідатор для ObjectId
 const objectIdValidator = (value, helpers) => {
@@ -82,4 +83,18 @@ export const createOrderSchema = {
 
 export const getOrdersSchema = {};
 
-export const updateOrderStatusSchema = {};
+export const updateOrderStatusSchema = {
+  [Segments.PARAMS]: Joi.object({
+    orderId: Joi.string().custom(objectIdValidator).required(),
+  }),
+  [Segments.BODY]: Joi.object({
+    status: Joi.string()
+      .valid(...ORDER_STATUSES)
+      .required()
+      .messages({
+        "string.base": "Status must be a string",
+        "any.only": `Status must be one of: ${ORDER_STATUSES.join(", ")}`,
+        "any.required": "Status is required",
+      }),
+  }),
+};

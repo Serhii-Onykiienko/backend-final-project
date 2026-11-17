@@ -1,5 +1,6 @@
 import { model, Schema } from "mongoose";
 import { SIZE } from "../constants/tags.js";
+import { ORDER_STATUSES } from "../constants/orderStatuses.js";
 
 const orderedGoodsSchema = new Schema(
   {
@@ -65,7 +66,7 @@ const orderSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["inProcess", "completing", "done", "canceled"],
+      enum: ORDER_STATUSES,
       default: "inProcess",
     },
     goodsOrderList: {
