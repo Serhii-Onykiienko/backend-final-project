@@ -5,7 +5,8 @@ import { createSession } from "../../services/auth/createSession.js";
 import { setSessionCookies } from "../../utils/setSessionCookies.js";
 
 export const registerUser = async (req, res) => {
-  const { name, email, tel, password } = req.body;
+  const { name, tel, password } = req.body;
+  const email = req.body.email.trim().toLowerCase();
 
   if (await User.findOne({ tel })) {
     throw createHttpError(400, "Tel in use");
