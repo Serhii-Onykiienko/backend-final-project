@@ -1,5 +1,5 @@
-
 import { Good } from "../../models/good.js";
+import { addRatings } from "./addRatings.js";
 
 export const getGoods = async ({
   page = 1,
@@ -41,12 +41,12 @@ export const getGoods = async ({
   const skip = (page - 1) * perPage;
 
   const [goods, totalItems] = await Promise.all([
-    Good.find(filter).skip(skip).limit(perPage),
+    Good.find(filter).skip(skip).limit(perPage).lean(),
     Good.countDocuments(filter),
   ]);
 
   return {
-    goods,
+    goods: await addRatings(goods),
     totalItems,
     page,
     perPage,
