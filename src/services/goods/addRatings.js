@@ -22,7 +22,7 @@ export const addRatings = async goods => {
 
     return {
       ...good,
-      rating: stat ? Math.round(stat.rating * 10) / 10 : 0,
+      rating: stat ? Math.round(stat.rating * 10) / 10 : 5,
       reviewsCount: stat?.reviewsCount ?? 0,
     };
   });
