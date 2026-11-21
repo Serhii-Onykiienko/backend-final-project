@@ -3,13 +3,13 @@ import { PHONE_REG_EXP } from "../constants/phoneRegExp.js";
 
 const strongPassword = Joi.string()
   .min(8)
-  .max(128)
+  .max(16)
   .pattern(/^[\x21-\x7E]+$/)
   .pattern(/[a-z]/)
   .pattern(/[A-Z]/)
   .pattern(/\d/)
   .required();
-  
+
 export const registerUserSchema = {
   [Segments.BODY]: Joi.object({
     name: Joi.string().min(2).max(32).trim().required(),
@@ -27,8 +27,8 @@ export const loginUserSchema = {
 };
 
 export const requestResetEmailSchema = {
-  [Segments.BODY]: Joi.object({ 
-    email: Joi.string().email().trim().lowercase().required(), 
+  [Segments.BODY]: Joi.object({
+    email: Joi.string().email().trim().lowercase().required(),
   }),
 };
 

@@ -48,4 +48,8 @@ const goodSchema = new Schema(
   //   { timestamps: true, versionKey: false },
 );
 
+goodSchema.index({ category: 1 });
+goodSchema.index({ size: 1 });
+goodSchema.index({ gender: 1 });
+
 export const Good = model("Good", goodSchema);

@@ -51,8 +51,10 @@ const userSchema = new Schema(
       min: 1,
     },
   },
-  { timestamps: true },
+  { timestamps: true, varsionKey: false },
 );
+
+userSchema.index({ email: 1 }, { unique: true });
 
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
